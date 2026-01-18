@@ -67,6 +67,11 @@ namespace tiny_vulkan {
 
 		m_Device = vkbDevice.device;
 
+		m_GraphicsFamilyIndex	= vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
+		m_PresentFamilyIndex	= vkbDevice.get_queue_index(vkb::QueueType::present).value();
+		m_GraphicsQueue			= vkbDevice.get_queue(vkb::QueueType::graphics).value();
+		m_PresentQueue			= vkbDevice.get_queue(vkb::QueueType::present).value();
+
 		// ========================================================
 		// VulkanSwapchain
 		// ========================================================
@@ -80,11 +85,11 @@ namespace tiny_vulkan {
 		LifetimeManager::PushFunction(vkDestroyDevice, m_Device, nullptr);
 		LifetimeManager::PushFunction(vkDestroySurfaceKHR, m_Instance, m_Surface, nullptr);
 
-		auto& views = m_Swapchain->GetViews();
+		auto& images = m_Swapchain->GetImages();
 		LifetimeManager::PushFunction(vkDestroySwapchainKHR, m_Device, m_Swapchain->GetRaw(), nullptr);
-		for (int i = 0; i < views.size(); ++i)
+		for (int i = 0; i < images.size(); ++i)
 		{
-			LifetimeManager::PushFunction(vkDestroyImageView, m_Device, views[i], nullptr);
+			LifetimeManager::PushFunction(vkDestroyImageView, m_Device, images[i]->GetView(), nullptr);
 		}
 	}
 
