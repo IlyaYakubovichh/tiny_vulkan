@@ -45,14 +45,14 @@ namespace tiny_vulkan {
 	};
 
 	// Builder
-	class VkDescriptorPoolBuilder
+	class VulkanDescriptorPoolBuilder
 	{
 	public:
-		VkDescriptorPoolBuilder() = default;
-		~VkDescriptorPoolBuilder() = default;
+		VulkanDescriptorPoolBuilder() = default;
+		~VulkanDescriptorPoolBuilder() = default;
 
-		VkDescriptorPoolBuilder& AddRatio(uint32_t descriptorCount, VkDescriptorType descriptorType);
-		VkDescriptorPoolBuilder& AddMaxSets(uint32_t maxSets);
+		VulkanDescriptorPoolBuilder& AddRatio(uint32_t descriptorCount, VkDescriptorType descriptorType);
+		VulkanDescriptorPoolBuilder& AddMaxSets(uint32_t maxSets);
 		std::shared_ptr<VulkanDescriptorPool> Build();
 
 	private:

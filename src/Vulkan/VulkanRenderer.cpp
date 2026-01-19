@@ -9,6 +9,8 @@
 
 namespace tiny_vulkan {
 
+	tiny_vulkan::RendererData VulkanRenderer::m_Data;
+
 	std::shared_ptr<Window>     VulkanRenderer::s_Window;
 	std::shared_ptr<VulkanCore> VulkanRenderer::s_VulkanCore;
 	std::vector<std::shared_ptr<VulkanFrame>> VulkanRenderer::s_Frames;
@@ -31,6 +33,8 @@ namespace tiny_vulkan {
 				s_VulkanCore->GetGraphicsFamily())
 			);
 		}
+
+		Prepare();
 	}
 
 	void VulkanRenderer::Shutdown()
@@ -45,6 +49,47 @@ namespace tiny_vulkan {
 		s_Window.reset();
 
 		LifetimeManager::ExecuteAll();
+	}
+
+	void VulkanRenderer::Prepare()
+	{
+		// ========================================================
+		// Descriptors
+		// ========================================================
+		m_Data.desriptorPool = VulkanDescriptorPoolBuilder()
+			.AddMaxSets(1)
+			.AddRatio(1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			.Build();
+
+		m_Data.setLayout = VkDescriptorSetLayoutBuilder()
+			.AddBinding(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE)
+			.Build();
+
+		m_Data.descriptorSet = m_Data.desriptorPool->AllocateSet(m_Data.setLayout);
+
+		WriteImagePackage imagePackage;
+		imagePackage.imageView = s_VulkanCore->GetRenderTarget()->GetView();
+		imagePackage.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		imagePackage.dstBinding = 0;
+		imagePackage.descriptorCount = 1;
+		imagePackage.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		m_Data.descriptorSet->WriteImageDescriptor(imagePackage);
+
+		// ========================================================
+		// Shaders
+		// ========================================================
+		std::filesystem::path wd = std::filesystem::current_path() / ".." / "src" / "EntryPoint" / "Assets";
+		std::filesystem::path computeShaderPath = wd / "Compute.comp";
+		m_Data.computeShader = std::make_shared<VulkanShader>(computeShaderPath);
+
+		// ========================================================
+		// Pipelines
+		// ========================================================
+		m_Data.pipeline = VkPipelineBuilder()
+			.SetPipelineType(PipelineType::COMPUTE)
+			.AddShader(m_Data.computeShader)
+			.LayoutAddDescriptorLayout(m_Data.setLayout)
+			.Build();
 	}
 
 	void VulkanRenderer::BeginFrame()
@@ -197,12 +242,30 @@ namespace tiny_vulkan {
 		vkCmdClearColorImage(cmd, renderTarget->GetRaw(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &range);
 	}
 
+	void VulkanRenderer::Dispatch(VkCommandBuffer cmdBuffer, uint32_t groupX, uint32_t groupY, uint32_t groupZ)
+	{
+		VulkanSync::InsertImageMemoryBarrier(
+			cmdBuffer, 
+			s_VulkanCore->GetRenderTarget(),
+			VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+			VK_ACCESS_2_SHADER_WRITE_BIT,
+			VK_IMAGE_LAYOUT_GENERAL);
+
+		vkCmdDispatch(cmdBuffer, 80, 45, 1);
+	}
+
 	void VulkanRenderer::OnUpdate()
 	{
 		BeginFrame();
 
-		auto cmdBuffer = s_Frames[s_CurrentFrameIndex]->GetCmdBuffer();
-		Clear(cmdBuffer, glm::vec3(1.0f, 0.0f, 0.0f));
+		auto	cmdBuffer		= s_Frames[s_CurrentFrameIndex]->GetCmdBuffer();
+		auto	pipelineLayout	= m_Data.pipeline->GetLayout();
+		auto	pipeline		= m_Data.pipeline->GetRaw();
+		auto	set				= m_Data.descriptorSet->GetRaw();
+
+		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &set, 0, nullptr);
+		Dispatch(cmdBuffer, 80, 45, 1);
 
 		EndFrame();
 	}

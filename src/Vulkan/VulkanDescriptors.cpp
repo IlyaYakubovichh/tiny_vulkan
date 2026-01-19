@@ -80,7 +80,7 @@ namespace tiny_vulkan {
 	}
 
 	// Builder
-	VkDescriptorPoolBuilder& VkDescriptorPoolBuilder::AddRatio(uint32_t descriptorCount, VkDescriptorType descriptorType)
+	VulkanDescriptorPoolBuilder& VulkanDescriptorPoolBuilder::AddRatio(uint32_t descriptorCount, VkDescriptorType descriptorType)
 	{
 		m_PoolSizes.push_back(VkDescriptorPoolSize
 			{
@@ -90,13 +90,13 @@ namespace tiny_vulkan {
 		return *this;
 	}
 
-	VkDescriptorPoolBuilder& VkDescriptorPoolBuilder::AddMaxSets(uint32_t maxSets)
+	VulkanDescriptorPoolBuilder& VulkanDescriptorPoolBuilder::AddMaxSets(uint32_t maxSets)
 	{
 		m_MaxSets = maxSets;
 		return *this;
 	}
 
-	std::shared_ptr<VulkanDescriptorPool> VkDescriptorPoolBuilder::Build()
+	std::shared_ptr<VulkanDescriptorPool> VulkanDescriptorPoolBuilder::Build()
 	{
 		auto core = VulkanRenderer::GetCore();
 		VkDevice device = core->GetDevice();
