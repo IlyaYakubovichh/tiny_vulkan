@@ -4,6 +4,8 @@
 #include "LogSystem.h"
 #include "LifetimeManager.h"
 #include "VulkanUtils.h"
+#include "VulkanShader.h"
+#include <filesystem>
 
 namespace tiny_vulkan {
 

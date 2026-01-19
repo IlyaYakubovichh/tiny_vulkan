@@ -50,7 +50,7 @@ namespace tiny_vulkan {
 		vkCreateSemaphore(device, &semaphoreInfo, nullptr, &m_ImageAcquireSemaphore);
 
 		// Per image semaphores
-		if (!s_RenderSemaphoresInitialized)
+		if (!s_RenderSemaphoresInitialized) [[unlikely]]
 		{
 			const auto& images = VulkanRenderer::GetCore()->GetSwapchain()->GetImages();
 			size_t imagesSize = images.size();

@@ -22,8 +22,8 @@ namespace tiny_vulkan {
 		static void Shutdown();
 		static void Run();
 
-		static auto GetWindow() { return s_Window; }
-		static auto GetCore() { return s_VulkanCore; }
+		[[nodiscard]] static auto GetWindow()	{ return s_Window; }
+		[[nodiscard]] static auto GetCore()		{ return s_VulkanCore; }
 
 	private:
 		static void BeginFrame();

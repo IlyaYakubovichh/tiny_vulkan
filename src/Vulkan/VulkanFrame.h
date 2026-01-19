@@ -11,11 +11,11 @@ namespace tiny_vulkan {
 		VulkanFrame(VkDevice device, uint32_t queueFamilyIndex);
 		~VulkanFrame() = default;
 
-		static auto& GetRenderSemaphores()	  { return s_RenderSemaphores; }
-		auto GetPool()					const { return m_Pool; }
-		auto GetCmdBuffer()				const { return m_CmdBuffer; }
-		auto GetImageAcquireSemaphore() const { return m_ImageAcquireSemaphore; }
-		auto GetRenderFence()			const { return m_RenderFence; }
+		[[nodiscard]] static auto& GetRenderSemaphores() { return s_RenderSemaphores; }
+		[[nodiscard]] auto GetPool()					const { return m_Pool; }
+		[[nodiscard]] auto GetCmdBuffer()				const { return m_CmdBuffer; }
+		[[nodiscard]] auto GetImageAcquireSemaphore()	const { return m_ImageAcquireSemaphore; }
+		[[nodiscard]] auto GetRenderFence()				const { return m_RenderFence; }
 
 	private:
 		static std::vector<VkSemaphore> s_RenderSemaphores;

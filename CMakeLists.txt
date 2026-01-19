@@ -12,15 +12,25 @@ file(GLOB_RECURSE sources
     ${localRoot}/src/*.ixx
 )
 
+file(GLOB_RECURSE shaders
+	${localRoot}/src/*.vert
+	${localRoot}/src/*.frag
+	${localRoot}/src/*.comp
+)
+
 file(GLOB_RECURSE includes 
     ${localRoot}/src/*.h
     ${localRoot}/src/*.hpp
 )
 
-source_group(TREE ${localRoot} FILES ${sources} ${includes})
+source_group(TREE ${localRoot} FILES ${sources} ${includes} ${shaders})
 
 # Target
-add_executable(tiny_vulkan ${includes} ${sources}) 
+add_executable(tiny_vulkan ${includes} ${sources} ${shaders}) 
+
+if(MSVC)
+	target_link_options(tiny_vulkan PRIVATE LINKER:/IGNORE:4099)
+endif()
 
 target_include_directories(tiny_vulkan PUBLIC 
 	${localRoot}/src/Vulkan

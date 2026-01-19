@@ -25,6 +25,9 @@ namespace tiny_vulkan {
 
 		m_Swapchain = vkbSwapchain.swapchain;
 
+		// ========================================================
+		// Images
+		// ========================================================
 		auto extent				= vkbSwapchain.extent;
 		auto swapchainImages	= vkbSwapchain.get_images().value();
 		auto views				= vkbSwapchain.get_image_views().value();

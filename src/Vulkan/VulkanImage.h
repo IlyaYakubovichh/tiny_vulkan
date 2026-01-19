@@ -18,11 +18,11 @@ namespace tiny_vulkan {
 		VulkanImage(VkImage image, VkImageView view, VkFormat format, VkExtent3D extent, VmaAllocation allocation = VK_NULL_HANDLE);
 		~VulkanImage();
 
-		auto	GetRaw() const { return m_Image; }
-		auto	GetView() const { return m_View; }
-		auto&	GetSyncState() const { return m_SyncState; }
-		auto	GetAllocation() const { return m_Allocation; }
-		auto	GetExtent() const { return m_Extent; }
+		[[nodiscard]] auto	GetRaw()		const { return m_Image; }
+		[[nodiscard]] auto	GetView()		const { return m_View; }
+		[[nodiscard]] auto&	GetSyncState()	const { return m_SyncState; }
+		[[nodiscard]] auto	GetAllocation() const { return m_Allocation; }
+		[[nodiscard]] auto	GetExtent()		const { return m_Extent; }
 
 		void SetSyncState(VkPipelineStageFlags2 newStage, VkAccessFlags2 newAccess, VkImageLayout newLayout);
 

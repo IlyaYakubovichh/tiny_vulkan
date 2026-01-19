@@ -14,13 +14,13 @@ namespace tiny_vulkan {
 		VulkanCore();
 		~VulkanCore() = default;
 
-		auto GetSwapchain() const { return m_Swapchain; }
-		auto GetDevice() const { return m_Device; }
-		auto GetGraphicsQueue() const { return m_GraphicsQueue; }
-		auto GetPresentQueue() const { return m_PresentQueue; }
-		auto GetGraphicsFamily() const { return m_GraphicsFamilyIndex; }
-		auto GetVmaAllocator() const { return m_Allocator; }
-		auto GetRenderTarget() const { return m_RenderTarget; }
+		[[nodiscard]] auto GetSwapchain()		const { return m_Swapchain; }
+		[[nodiscard]] auto GetDevice()			const { return m_Device; }
+		[[nodiscard]] auto GetGraphicsQueue()	const { return m_GraphicsQueue; }
+		[[nodiscard]] auto GetPresentQueue()	const { return m_PresentQueue; }
+		[[nodiscard]] auto GetGraphicsFamily()	const { return m_GraphicsFamilyIndex; }
+		[[nodiscard]] auto GetVmaAllocator()	const { return m_Allocator; }
+		[[nodiscard]] auto GetRenderTarget()	const { return m_RenderTarget; }
 		
 	private:
 		VkInstance							m_Instance{ VK_NULL_HANDLE };

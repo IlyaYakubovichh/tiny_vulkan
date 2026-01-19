@@ -13,8 +13,8 @@ namespace tiny_vulkan {
 		VulkanSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface);
 		~VulkanSwapchain() = default;
 
-		auto	GetRaw()	 const { return m_Swapchain; }
-		auto&	GetImages()	 const { return m_Images; }
+		[[nodiscard]] auto	GetRaw()	 const { return m_Swapchain; }
+		[[nodiscard]] auto&	GetImages()	 const { return m_Images; }
 
 	private:
 		VkSwapchainKHR m_Swapchain{ VK_NULL_HANDLE };
