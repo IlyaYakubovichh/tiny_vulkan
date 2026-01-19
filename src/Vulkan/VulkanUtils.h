@@ -6,7 +6,7 @@
 
 #define CHECK_VK_RES(res)                                                                       \
     if(res != VK_SUCCESS) {                                                                     \
-        LOG_CRITICAL(fmt::runtime("CRITICAL VULKAN ERROR: {0}"), string_VkResult(res));    \
+        LOG_CRITICAL(fmt::runtime("CRITICAL VULKAN ERROR: {0}"), string_VkResult(res));         \
         abort();                                                                                \
     }
 

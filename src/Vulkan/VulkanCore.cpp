@@ -1,8 +1,11 @@
 #include "VulkanCore.h"
 #include "VulkanRenderer.h"
 #include "LifetimeManager.h"
+#include "VulkanUtils.h"
 #include "VkBootstrap.h"
 #include <GLFW/glfw3.h>
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
 
 namespace tiny_vulkan {
 
@@ -78,6 +81,80 @@ namespace tiny_vulkan {
 		m_Swapchain = std::make_shared<VulkanSwapchain>(m_PhysicalDevice, m_Device, m_Surface);
 
 		// ========================================================
+		// VmaAllocator
+		// ========================================================
+		VmaAllocatorCreateInfo allocatorInfo = {};
+		allocatorInfo.physicalDevice	= m_PhysicalDevice;
+		allocatorInfo.device			= m_Device;
+		allocatorInfo.instance			= m_Instance;
+		allocatorInfo.flags				= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+		CHECK_VK_RES(vmaCreateAllocator(&allocatorInfo, &m_Allocator));
+
+		// ========================================================
+		// Render target
+		// ========================================================
+		auto swapchainImage = m_Swapchain->GetImages()[0];
+		VkFormat renderTargetFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+		VkExtent3D swapchainImageExtent = swapchainImage->GetExtent();
+
+		// Render target info
+		VkImageCreateInfo renderTargetInfo = {};
+		renderTargetInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		renderTargetInfo.pNext = nullptr;
+		renderTargetInfo.flags = 0;
+		renderTargetInfo.imageType = VK_IMAGE_TYPE_2D;
+		renderTargetInfo.format = renderTargetFormat;
+		renderTargetInfo.extent = swapchainImageExtent;
+		renderTargetInfo.mipLevels = 1;
+		renderTargetInfo.arrayLayers = 1;
+		renderTargetInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		renderTargetInfo.tiling = VK_IMAGE_TILING_OPTIMAL; // texels are laid out in such a way how GPU wants
+		renderTargetInfo.usage = 
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | 
+			VK_IMAGE_USAGE_STORAGE_BIT		| 
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		renderTargetInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // only 1 family will access it
+		renderTargetInfo.queueFamilyIndexCount = 0;
+		renderTargetInfo.pQueueFamilyIndices = nullptr;
+		renderTargetInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		// Allocation info (on GPU)
+		VmaAllocationCreateInfo allocationInfo = {};
+		allocationInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+		allocationInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+		allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		allocationInfo.priority = 1.0f;
+
+		VkImage renderTargetImage{ VK_NULL_HANDLE };
+		VmaAllocation allocation{ VK_NULL_HANDLE };
+		vmaCreateImage(m_Allocator, &renderTargetInfo, &allocationInfo, &renderTargetImage, &allocation, nullptr);
+
+		// VkImageView
+		VkImageViewCreateInfo renderTargetViewInfo = {};
+		renderTargetViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		renderTargetViewInfo.pNext = nullptr;
+		renderTargetViewInfo.flags = 0;
+		renderTargetViewInfo.image = renderTargetImage;
+		renderTargetViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		renderTargetViewInfo.format = renderTargetFormat;
+		renderTargetViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		renderTargetViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		renderTargetViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		renderTargetViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		renderTargetViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		renderTargetViewInfo.subresourceRange.baseArrayLayer = 0;
+		renderTargetViewInfo.subresourceRange.baseMipLevel = 0;
+		renderTargetViewInfo.subresourceRange.layerCount = 1;
+		renderTargetViewInfo.subresourceRange.levelCount = 1;
+
+		VkImageView renderTargetView{ VK_NULL_HANDLE };
+		CHECK_VK_RES(vkCreateImageView(m_Device, &renderTargetViewInfo, nullptr, &renderTargetView));
+
+		// Render target
+		m_RenderTarget = std::make_shared<VulkanImage>(renderTargetImage, renderTargetView, renderTargetFormat, swapchainImageExtent, allocation);
+
+		// ========================================================
 		// Register cleanup
 		// ========================================================
 		LifetimeManager::PushFunction(vkDestroyInstance, m_Instance, nullptr);
@@ -91,6 +168,10 @@ namespace tiny_vulkan {
 		{
 			LifetimeManager::PushFunction(vkDestroyImageView, m_Device, images[i]->GetView(), nullptr);
 		}
+
+		LifetimeManager::PushFunction(vmaDestroyAllocator, m_Allocator);
+		LifetimeManager::PushFunction(vmaDestroyImage, m_Allocator, renderTargetImage, allocation);
+		LifetimeManager::PushFunction(vkDestroyImageView, m_Device, renderTargetView, nullptr);
 	}
 
 }

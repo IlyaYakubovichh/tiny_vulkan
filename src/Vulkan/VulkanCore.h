@@ -1,7 +1,9 @@
 #pragma once
 
 #include "VulkanSwapchain.h"
+#include "VulkanImage.h"
 #include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 #include <memory>
 
 namespace tiny_vulkan {
@@ -17,6 +19,8 @@ namespace tiny_vulkan {
 		auto GetGraphicsQueue() const { return m_GraphicsQueue; }
 		auto GetPresentQueue() const { return m_PresentQueue; }
 		auto GetGraphicsFamily() const { return m_GraphicsFamilyIndex; }
+		auto GetVmaAllocator() const { return m_Allocator; }
+		auto GetRenderTarget() const { return m_RenderTarget; }
 		
 	private:
 		VkInstance							m_Instance{ VK_NULL_HANDLE };
@@ -25,6 +29,8 @@ namespace tiny_vulkan {
 		VkDevice							m_Device{ VK_NULL_HANDLE };
 		VkSurfaceKHR						m_Surface{ VK_NULL_HANDLE };
 		std::shared_ptr<VulkanSwapchain>	m_Swapchain;
+		VmaAllocator						m_Allocator{ VK_NULL_HANDLE };
+		std::shared_ptr<VulkanImage>		m_RenderTarget;
 
 		uint32_t m_GraphicsFamilyIndex;	VkQueue m_GraphicsQueue;
 		uint32_t m_PresentFamilyIndex;	VkQueue m_PresentQueue;

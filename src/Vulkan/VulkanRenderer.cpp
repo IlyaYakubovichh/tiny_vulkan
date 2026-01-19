@@ -1,5 +1,6 @@
 #include "VulkanRenderer.h"
 #include "VulkanSync.h"
+#include "VulkanTransfer.h"
 #include "LogSystem.h"
 #include "LifetimeManager.h"
 #include "VulkanUtils.h"
@@ -46,16 +47,23 @@ namespace tiny_vulkan {
 
 	void VulkanRenderer::BeginFrame()
 	{
-		auto device = s_VulkanCore->GetDevice();
-		auto swapchain = s_VulkanCore->GetSwapchain()->GetRaw();
-		auto& frame = s_Frames[s_CurrentFrameIndex];
+		// ========================================================
+		// Required data
+		// ========================================================
+		auto		device			= s_VulkanCore->GetDevice();
+		auto		swapchain		= s_VulkanCore->GetSwapchain()->GetRaw();
+		auto&		frame			= s_Frames[s_CurrentFrameIndex];
+		auto		cmdBuffer		= frame->GetCmdBuffer();
+		VkFence		renderFence		= frame->GetRenderFence();
+		VkSemaphore imageSemaphore	= frame->GetImageAcquireSemaphore();
 
-		// Wait for the previous frame to finish
-		VkFence renderFence = frame->GetRenderFence();
+		// ========================================================
+		// Begin
+		// ========================================================
+		// Wait prev render finished
 		CHECK_VK_RES(vkWaitForFences(device, 1, &renderFence, VK_TRUE, UINT64_MAX));
 
 		// Acquire next image
-		VkSemaphore imageSemaphore = frame->GetImageAcquireSemaphore();
 		CHECK_VK_RES(vkAcquireNextImageKHR(
 			device,
 			swapchain,
@@ -65,10 +73,9 @@ namespace tiny_vulkan {
 			&s_CurrentImageIndex
 		));
 
+		// Reset and begin Command Buffer
 		CHECK_VK_RES(vkResetFences(device, 1, &renderFence));
 
-		// Reset Command Buffer
-		auto cmdBuffer = frame->GetCmdBuffer();
 		CHECK_VK_RES(vkResetCommandBuffer(cmdBuffer, 0));
 
 		VkCommandBufferBeginInfo beginInfo = {};
@@ -80,13 +87,22 @@ namespace tiny_vulkan {
 
 	void VulkanRenderer::EndFrame()
 	{
-		auto& frame = s_Frames[s_CurrentFrameIndex];
-		auto cmdBuffer = frame->GetCmdBuffer();
+		auto&	frame			= s_Frames[s_CurrentFrameIndex];
+		auto	cmdBuffer		= frame->GetCmdBuffer();
+		auto	swapchainImage	= s_VulkanCore->GetSwapchain()->GetImages()[s_CurrentImageIndex];
+		auto	renderTarget	= s_VulkanCore->GetRenderTarget();
 
-		// Transition Swapchain Image for Presentation
-		auto swapchainImage = s_VulkanCore->GetSwapchain()->GetImages()[s_CurrentImageIndex];
+		// ========================================================
+		// Barriers + Finish
+		// ========================================================
+		VulkanTransfer::Blit( // Handles sync internally
+			cmdBuffer, 
+			renderTarget, 
+			swapchainImage,
+			renderTarget->GetExtent(),
+			swapchainImage->GetExtent());
 
-		VulkanSync::InsertImageMemoryBarrier(
+		VulkanSync::InsertImageMemoryBarrier( // Prepare swapchain image for presentation
 			cmdBuffer,
 			swapchainImage,
 			VK_PIPELINE_STAGE_2_NONE,
@@ -96,7 +112,9 @@ namespace tiny_vulkan {
 
 		CHECK_VK_RES(vkEndCommandBuffer(cmdBuffer));
 
+		// ========================================================
 		// Submit
+		// ========================================================
 		auto graphicsQueue = s_VulkanCore->GetGraphicsQueue();
 		auto imageAcquireSem = frame->GetImageAcquireSemaphore();
 		auto renderFinishedSem = frame->GetRenderSemaphores()[s_CurrentImageIndex];
@@ -127,7 +145,9 @@ namespace tiny_vulkan {
 
 		CHECK_VK_RES(vkQueueSubmit2(graphicsQueue, 1, &submitInfo, renderFence));
 
+		// ========================================================
 		// Present
+		// ========================================================
 		auto presentQueue = s_VulkanCore->GetPresentQueue();
 		auto swapchainRaw = s_VulkanCore->GetSwapchain()->GetRaw();
 
@@ -147,18 +167,22 @@ namespace tiny_vulkan {
 
 	void VulkanRenderer::Clear(VkCommandBuffer cmd, glm::vec3 color)
 	{
-		auto swapchainImages = s_VulkanCore->GetSwapchain()->GetImages();
-		auto image = swapchainImages[s_CurrentImageIndex];
+		auto renderTarget = s_VulkanCore->GetRenderTarget();
 
-		// Transition to Transfer Dst
+		// ========================================================
+		// Barriers
+		// ========================================================
 		VulkanSync::InsertImageMemoryBarrier(
 			cmd,
-			image,
+			renderTarget,
 			VK_PIPELINE_STAGE_2_TRANSFER_BIT,
 			VK_ACCESS_2_TRANSFER_WRITE_BIT,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 		);
 
+		// ========================================================
+		// Clear
+		// ========================================================
 		VkClearColorValue clearColor = { {color.r, color.g, color.b, 1.0f} };
 
 		VkImageSubresourceRange range = {};
@@ -168,7 +192,7 @@ namespace tiny_vulkan {
 		range.layerCount = 1;
 		range.levelCount = 1;
 
-		vkCmdClearColorImage(cmd, image->GetRaw(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &range);
+		vkCmdClearColorImage(cmd, renderTarget->GetRaw(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor, 1, &range);
 	}
 
 	void VulkanRenderer::OnUpdate()
