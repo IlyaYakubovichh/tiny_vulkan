@@ -13,7 +13,7 @@ namespace tiny_vulkan {
 
 	VkPipelineBuilder& VkPipelineBuilder::LayoutAddDescriptorLayout(VkDescriptorSetLayout layout)
 	{
-		m_DescriptorSetLayout = layout;
+		m_DescriptorSetLayouts.push_back(layout);
 		return *this;
 	}
 
@@ -42,8 +42,8 @@ namespace tiny_vulkan {
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.pNext = nullptr;
-		pipelineLayoutInfo.pSetLayouts = &m_DescriptorSetLayout;
-		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = m_DescriptorSetLayouts.data();
+		pipelineLayoutInfo.setLayoutCount = (uint32_t) m_DescriptorSetLayouts.size();
 
 		VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
 		CHECK_VK_RES(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));

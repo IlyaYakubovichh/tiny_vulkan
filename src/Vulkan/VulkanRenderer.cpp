@@ -9,7 +9,7 @@
 
 namespace tiny_vulkan {
 
-	tiny_vulkan::RendererData VulkanRenderer::m_Data;
+	tiny_vulkan::RendererData			VulkanRenderer::m_Data;
 
 	std::shared_ptr<Window>     VulkanRenderer::s_Window;
 	std::shared_ptr<VulkanCore> VulkanRenderer::s_VulkanCore;
@@ -35,6 +35,8 @@ namespace tiny_vulkan {
 		}
 
 		Prepare();
+
+		ImGuiRenderer::Initialize();
 	}
 
 	void VulkanRenderer::Shutdown()
@@ -142,6 +144,10 @@ namespace tiny_vulkan {
 		// ========================================================
 		// Barriers + Finish
 		// ========================================================
+		// Calculate imgui state
+		ImGuiRenderer::CalculateInternal();
+
+		// Blit render target to swapchain image
 		VulkanTransfer::Blit( // Handles sync internally
 			cmdBuffer, 
 			renderTarget, 
@@ -149,10 +155,29 @@ namespace tiny_vulkan {
 			renderTarget->GetExtent(),
 			swapchainImage->GetExtent());
 
-		VulkanSync::InsertImageMemoryBarrier( // Prepare swapchain image for presentation
+		// Prepare swapchain image for imgui
+		VulkanSync::InsertImageMemoryBarrier( 
 			cmdBuffer,
 			swapchainImage,
-			VK_PIPELINE_STAGE_2_NONE,
+			VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+			VK_ACCESS_2_NONE,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		);
+
+		// Draw imgui into swapchain image
+		ImGuiOnUpdatePackage package;
+		package.cmdBuffer	= cmdBuffer;
+		package.extent		= swapchainImage->GetExtent();
+		package.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		package.imageView	= swapchainImage->GetView();
+
+		ImGuiRenderer::OnUpdate(package);
+
+		// Prepare swapchain image for presentation
+		VulkanSync::InsertImageMemoryBarrier(
+			cmdBuffer,
+			swapchainImage,
+			VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
 			VK_ACCESS_2_NONE,
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
 		);

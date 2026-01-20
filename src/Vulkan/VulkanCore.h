@@ -14,6 +14,8 @@ namespace tiny_vulkan {
 		VulkanCore();
 		~VulkanCore() = default;
 
+		[[nodiscard]] auto GetInstance() const { return m_Instance; }
+		[[nodiscard]] auto GetPhysicalDevice() const { return m_PhysicalDevice; }
 		[[nodiscard]] auto GetSwapchain()		const { return m_Swapchain; }
 		[[nodiscard]] auto GetDevice()			const { return m_Device; }
 		[[nodiscard]] auto GetGraphicsQueue()	const { return m_GraphicsQueue; }

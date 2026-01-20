@@ -20,6 +20,7 @@ namespace tiny_vulkan {
 
 		[[nodiscard]] auto	GetRaw()		const { return m_Image; }
 		[[nodiscard]] auto	GetView()		const { return m_View; }
+		[[nodiscard]] auto GetFormat() const { return m_Format; }
 		[[nodiscard]] auto&	GetSyncState()	const { return m_SyncState; }
 		[[nodiscard]] auto	GetAllocation() const { return m_Allocation; }
 		[[nodiscard]] auto	GetExtent()		const { return m_Extent; }

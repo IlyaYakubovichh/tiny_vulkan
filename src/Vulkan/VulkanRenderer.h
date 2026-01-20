@@ -5,10 +5,10 @@
 #include "VulkanFrame.h"
 #include "VulkanDescriptors.h"
 #include "VulkanPipelines.h"
+#include "ImGui/ImGuiRenderer.h"
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
-#include <array>
 
 namespace tiny_vulkan {
 
@@ -29,14 +29,14 @@ namespace tiny_vulkan {
 		VulkanRenderer() = delete;
 		~VulkanRenderer() = delete;
 
-		static void Initialize();
-		static void Shutdown();
 		static void Run();
 
 		[[nodiscard]] static auto GetWindow()	{ return s_Window; }
 		[[nodiscard]] static auto GetCore()		{ return s_VulkanCore; }
 
 	private:
+		static void Initialize();
+		static void Shutdown();
 		static void Prepare();
 		static void BeginFrame();
 		static void EndFrame();

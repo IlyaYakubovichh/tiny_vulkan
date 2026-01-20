@@ -30,9 +30,9 @@ namespace tiny_vulkan {
 		std::shared_ptr<VulkanPipeline> BuildCompute();
 
 	private:
-		PipelineType					m_Type;
-		std::shared_ptr<VulkanShader>	m_Shader;
-		VkDescriptorSetLayout			m_DescriptorSetLayout{ VK_NULL_HANDLE };
+		PipelineType						m_Type;
+		std::shared_ptr<VulkanShader>		m_Shader;
+		std::vector<VkDescriptorSetLayout>	m_DescriptorSetLayouts;
 	};
 
 	class VulkanPipeline
