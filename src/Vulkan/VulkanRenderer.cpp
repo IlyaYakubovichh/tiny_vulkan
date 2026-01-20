@@ -9,15 +9,21 @@
 
 namespace tiny_vulkan {
 
-	tiny_vulkan::RendererData VulkanRenderer::s_Data;
+	// ========================================================
+	// Static init
+	// ========================================================
+	std::shared_ptr<RendererData>	VulkanRenderer::s_Data;
+	std::shared_ptr<Window>			VulkanRenderer::s_Window;
+	std::shared_ptr<VulkanCore>		VulkanRenderer::s_VulkanCore;
 
-	std::shared_ptr<Window>     VulkanRenderer::s_Window;
-	std::shared_ptr<VulkanCore> VulkanRenderer::s_VulkanCore;
 	std::vector<std::shared_ptr<VulkanFrame>> VulkanRenderer::s_Frames;
 
 	uint32_t VulkanRenderer::s_CurrentFrameIndex = 0;
 	uint32_t VulkanRenderer::s_CurrentImageIndex = 0;
 
+	// ========================================================
+	// Implementation
+	// ========================================================
 	void VulkanRenderer::Initialize()
 	{
 		LogSystem::Initialize();
@@ -34,14 +40,16 @@ namespace tiny_vulkan {
 			);
 		}
 
-		s_Data.Initialize();
+		s_Data = std::make_shared<RendererData>();
+		s_Data->Initialize();
 
 		ImGuiRenderer::Initialize();
 	}
 
 	void VulkanRenderer::Shutdown()
 	{
-		if (s_VulkanCore) {
+		if (s_VulkanCore) 
+		{
 			vkDeviceWaitIdle(s_VulkanCore->GetDevice());
 		}
 
@@ -146,10 +154,10 @@ namespace tiny_vulkan {
 		// ========================================================
 		// Submit
 		// ========================================================
-		auto graphicsQueue = s_VulkanCore->GetGraphicsQueue();
-		auto imageAcquireSem = frame->GetImageAcquireSemaphore();
-		auto renderFinishedSem = frame->GetRenderSemaphores()[s_CurrentImageIndex];
-		auto renderFence = frame->GetRenderFence();
+		auto graphicsQueue		= s_VulkanCore->GetGraphicsQueue();
+		auto imageAcquireSem	= frame->GetImageAcquireSemaphore();
+		auto renderFinishedSem	= frame->GetRenderSemaphores()[s_CurrentImageIndex];
+		auto renderFence		= frame->GetRenderFence();
 
 		VkCommandBufferSubmitInfo cmdInfo = {};
 		cmdInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
@@ -242,17 +250,27 @@ namespace tiny_vulkan {
 	{
 		BeginFrame();
 
-		auto	cmdBuffer		= s_Frames[s_CurrentFrameIndex]->GetCmdBuffer();
-		auto	pipelineLayout	= s_Data.pipeline->GetLayout();
-		auto	pipeline		= s_Data.pipeline->GetRaw();
-		auto	set				= s_Data.descriptorSet->GetRaw();
+		// ========================================================
+		// Prepare
+		// ========================================================
+		auto  cmdBuffer			= s_Frames[s_CurrentFrameIndex]->GetCmdBuffer();
+		auto  set				= s_Data->GetDescriptorSet();
+		auto& currentEffect		= s_Data->GetCurrentEffect();
+		auto& pushConstants		= s_Data->GetCurrentEffect().params;
+		auto  pipelineLayout	= currentEffect.computePipeline->GetLayout();
+		auto  pipeline			= currentEffect.computePipeline->GetRaw();
 
+		// ========================================================
+		// Compute Dispatch
+		// ========================================================
 		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &set, 0, nullptr);
-		vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, sizeof(glm::vec4), sizeof(ComputePushConstants) - sizeof(glm::vec4), &s_Data.pushConstants.data2);
+		vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(EffectParams), &pushConstants);
 		Dispatch(cmdBuffer, 80, 45, 1);
-		Dispatch(cmdBuffer, 40, 25, 1);
 
+		// ========================================================
+		// End
+		// ========================================================
 		EndFrame();
 	}
 

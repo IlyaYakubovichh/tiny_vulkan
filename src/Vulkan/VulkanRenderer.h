@@ -20,6 +20,7 @@ namespace tiny_vulkan {
 
 		static void Run();
 
+		[[nodiscard]] static auto& GetRendererData() { return s_Data; }
 		[[nodiscard]] static auto GetWindow()	{ return s_Window; }
 		[[nodiscard]] static auto GetCore()		{ return s_VulkanCore; }
 
@@ -33,10 +34,9 @@ namespace tiny_vulkan {
 		static void Dispatch(VkCommandBuffer cmdBuffer, uint32_t groupX, uint32_t groupY, uint32_t groupZ);
 
 	private:
-		static RendererData s_Data;
-
-		static std::shared_ptr<Window>     s_Window;
-		static std::shared_ptr<VulkanCore> s_VulkanCore;
+		static std::shared_ptr<RendererData>	s_Data;
+		static std::shared_ptr<Window>			s_Window;
+		static std::shared_ptr<VulkanCore>		s_VulkanCore;
 
 		static std::vector<std::shared_ptr<VulkanFrame>> s_Frames;
 

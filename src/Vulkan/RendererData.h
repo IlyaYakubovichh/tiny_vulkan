@@ -5,28 +5,47 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <memory>
+#include <vector>
+#include <array>
+#include <string>
 
 namespace tiny_vulkan {
 
-	struct ComputePushConstants
+	struct EffectParams
 	{
-		glm::vec4 data1;
-		glm::vec4 data2;
-		glm::vec4 data3;
-		glm::vec4 data4;
+		EffectParams() { values.fill(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)); }
+
+		std::array<glm::vec4, 4> values;
 	};
 
-	struct RendererData
+	struct ComputeEffect
 	{
-		ComputePushConstants pushConstants;
+		std::string name;
+		std::shared_ptr<VulkanPipeline> computePipeline;
+		EffectParams params;
 
-		VkDescriptorSetLayout					setLayout{ VK_NULL_HANDLE };
-		std::shared_ptr<VulkanPipeline>			pipeline;
-		std::shared_ptr<VulkanDescriptorPool>	desriptorPool;
-		std::shared_ptr<VulkanDescriptorSet>	descriptorSet;
-		std::shared_ptr<VulkanShader>			computeShader;
+		static int m_SelectedEffectIndex;
+	};
 
+	class RendererData
+	{
+	public:
 		void Initialize();
+		void UpdateDescriptors(); 
+
+		auto& GetEffects()			const { return m_ComputeEffects; }
+		auto& GetCurrentEffect()	const { return m_ComputeEffects[ComputeEffect::m_SelectedEffectIndex]; }
+		auto  GetDescriptorSet()	const { return m_DescriptorSet->GetRaw(); }
+
+	private:
+		std::vector<ComputeEffect> m_ComputeEffects;
+
+		VkDescriptorSetLayout                 m_SetLayout{ VK_NULL_HANDLE };
+		std::shared_ptr<VulkanDescriptorPool> m_DescriptorPool;
+		std::shared_ptr<VulkanDescriptorSet>  m_DescriptorSet;
+
+		void CreatePipelines();
+		void CreateDescriptors();
 	};
 
 }
