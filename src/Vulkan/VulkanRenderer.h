@@ -3,23 +3,12 @@
 #include "Window.h"
 #include "VulkanCore.h"
 #include "VulkanFrame.h"
-#include "VulkanDescriptors.h"
-#include "VulkanPipelines.h"
-#include "ImGui/ImGuiRenderer.h"
+#include "RendererData.h"
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
 
 namespace tiny_vulkan {
-
-	struct RendererData
-	{
-		VkDescriptorSetLayout					setLayout{ VK_NULL_HANDLE };
-		std::shared_ptr<VulkanPipeline>			pipeline;
-		std::shared_ptr<VulkanDescriptorPool>	desriptorPool;
-		std::shared_ptr<VulkanDescriptorSet>	descriptorSet;
-		std::shared_ptr<VulkanShader>			computeShader;
-	};
 
 	constexpr uint32_t FRAMES_IN_FLIGHT = 3;
 
@@ -37,7 +26,6 @@ namespace tiny_vulkan {
 	private:
 		static void Initialize();
 		static void Shutdown();
-		static void Prepare();
 		static void BeginFrame();
 		static void EndFrame();
 		static void OnUpdate();
@@ -45,7 +33,7 @@ namespace tiny_vulkan {
 		static void Dispatch(VkCommandBuffer cmdBuffer, uint32_t groupX, uint32_t groupY, uint32_t groupZ);
 
 	private:
-		static RendererData m_Data;
+		static RendererData s_Data;
 
 		static std::shared_ptr<Window>     s_Window;
 		static std::shared_ptr<VulkanCore> s_VulkanCore;

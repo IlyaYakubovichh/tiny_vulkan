@@ -23,6 +23,7 @@ namespace tiny_vulkan {
 
 		VkPipelineBuilder& SetPipelineType(PipelineType type);
 		VkPipelineBuilder& LayoutAddDescriptorLayout(VkDescriptorSetLayout layout);
+		VkPipelineBuilder& LayoutAddPushRange(VkPushConstantRange range);
 		VkPipelineBuilder& AddShader(std::shared_ptr<VulkanShader> shader);
 		std::shared_ptr<VulkanPipeline> Build();
 
@@ -33,6 +34,7 @@ namespace tiny_vulkan {
 		PipelineType						m_Type;
 		std::shared_ptr<VulkanShader>		m_Shader;
 		std::vector<VkDescriptorSetLayout>	m_DescriptorSetLayouts;
+		std::vector<VkPushConstantRange>	m_Ranges;
 	};
 
 	class VulkanPipeline

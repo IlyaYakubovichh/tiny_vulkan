@@ -17,6 +17,12 @@ namespace tiny_vulkan {
 		return *this;
 	}
 
+	VkPipelineBuilder& VkPipelineBuilder::LayoutAddPushRange(VkPushConstantRange range)
+	{
+		m_Ranges.push_back(range);
+		return *this;
+	}
+
 	VkPipelineBuilder& VkPipelineBuilder::AddShader(std::shared_ptr<VulkanShader> shader)
 	{
 		m_Shader = shader;
@@ -44,6 +50,8 @@ namespace tiny_vulkan {
 		pipelineLayoutInfo.pNext = nullptr;
 		pipelineLayoutInfo.pSetLayouts = m_DescriptorSetLayouts.data();
 		pipelineLayoutInfo.setLayoutCount = (uint32_t) m_DescriptorSetLayouts.size();
+		pipelineLayoutInfo.pPushConstantRanges = m_Ranges.data();
+		pipelineLayoutInfo.pushConstantRangeCount = (uint32_t) m_Ranges.size();
 
 		VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
 		CHECK_VK_RES(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
