@@ -12,7 +12,8 @@ namespace tiny_vulkan {
 		VulkanShader(std::filesystem::path shaderPath);
 		virtual ~VulkanShader() = default;
 
-		VkShaderModule GetRaw() const { return m_ShaderModule; }
+		VkShaderModule			GetRaw()	const { return m_ShaderModule; }
+		VkShaderStageFlagBits	GetStage()	const { return m_Stage; }
 
 	private:
 		std::filesystem::path GetShaderCacheDir()		const;
@@ -28,9 +29,9 @@ namespace tiny_vulkan {
 
 	private:
 		VkShaderModule			m_ShaderModule{ VK_NULL_HANDLE };
+		VkShaderStageFlagBits	m_Stage{ VK_SHADER_STAGE_ALL };
 		std::filesystem::path	m_ShaderPath;
 		std::vector<uint32_t>	m_SPIRV;
 	};
-
 
 }

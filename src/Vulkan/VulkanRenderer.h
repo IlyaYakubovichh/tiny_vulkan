@@ -32,6 +32,7 @@ namespace tiny_vulkan {
 		static void OnUpdate();
 		static void Clear(VkCommandBuffer cmd, glm::vec3 color);
 		static void Dispatch(VkCommandBuffer cmdBuffer, uint32_t groupX, uint32_t groupY, uint32_t groupZ);
+		static void DrawTriangle(VkCommandBuffer cmdBuffer);
 
 	private:
 		static std::shared_ptr<RendererData>	s_Data;

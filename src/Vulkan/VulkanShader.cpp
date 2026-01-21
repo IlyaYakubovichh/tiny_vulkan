@@ -22,9 +22,23 @@ namespace tiny_vulkan {
 		return shaderc_glsl_infer_from_source;
 	}
 
+	static VkShaderStageFlagBits GetVkShaderStage(const std::filesystem::path& shaderPath)
+	{
+		std::string shaderExt = shaderPath.extension().string();
+
+		if (shaderExt == ".vert") return VK_SHADER_STAGE_VERTEX_BIT;
+		if (shaderExt == ".frag") return VK_SHADER_STAGE_FRAGMENT_BIT;
+		if (shaderExt == ".comp") return VK_SHADER_STAGE_COMPUTE_BIT;
+		if (shaderExt == ".geom") return VK_SHADER_STAGE_GEOMETRY_BIT;
+
+		return VK_SHADER_STAGE_ALL;
+	}
+
 	VulkanShader::VulkanShader(std::filesystem::path shaderPath)
 		: m_ShaderPath(shaderPath)
 	{
+		m_Stage = GetVkShaderStage(m_ShaderPath);
+
 		if (m_ShaderPath.empty())
 		{
 			LOG_CRITICAL("Empty shader path");

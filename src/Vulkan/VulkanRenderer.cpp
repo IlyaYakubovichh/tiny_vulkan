@@ -246,6 +246,70 @@ namespace tiny_vulkan {
 		vkCmdDispatch(cmdBuffer, groupX, groupY, groupZ);
 	}
 
+	void VulkanRenderer::DrawTriangle(VkCommandBuffer cmdBuffer)
+	{
+		auto renderTarget = s_VulkanCore->GetRenderTarget();
+		VkExtent3D renderTargetExtent = renderTarget->GetExtent();
+
+		VkRenderingAttachmentInfo attachmentInfo = {};
+		attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		attachmentInfo.pNext = nullptr;
+		attachmentInfo.imageView = renderTarget->GetView();
+		attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		VkRenderingInfo renderingInfo = {};
+		renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		renderingInfo.pNext = nullptr;
+		renderingInfo.flags = 0;
+		renderingInfo.renderArea = VkRect2D{ {0,0}, {renderTargetExtent.width, renderTargetExtent.height} };
+		renderingInfo.layerCount = 1;
+		renderingInfo.viewMask = 0;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.pColorAttachments = &attachmentInfo;
+		renderingInfo.pDepthAttachment = nullptr;
+		renderingInfo.pStencilAttachment = nullptr;
+
+		// ========================================================
+		// Sync
+		// ========================================================
+		VulkanSync::InsertImageMemoryBarrier(
+			cmdBuffer,
+			renderTarget,
+			VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		);
+
+		// ========================================================
+		// Begin render pass
+		// ========================================================
+		vkCmdBeginRendering(cmdBuffer, &renderingInfo);
+		
+		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data->GetPipeline()->GetRaw());
+
+		VkViewport viewport = {};
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = renderTargetExtent.width;
+		viewport.height = renderTargetExtent.height;
+		viewport.minDepth = 0.f;
+		viewport.maxDepth = 1.f;
+		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor = {};
+		scissor.offset.x = 0;
+		scissor.offset.y = 0;
+		scissor.extent.width = renderTargetExtent.width;
+		scissor.extent.height = renderTargetExtent.height;
+		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+
+		vkCmdEndRendering(cmdBuffer);
+	}
+
 	void VulkanRenderer::OnUpdate()
 	{
 		BeginFrame();
@@ -253,20 +317,12 @@ namespace tiny_vulkan {
 		// ========================================================
 		// Prepare
 		// ========================================================
-		auto  cmdBuffer			= s_Frames[s_CurrentFrameIndex]->GetCmdBuffer();
-		auto  set				= s_Data->GetDescriptorSet();
-		auto& currentEffect		= s_Data->GetCurrentEffect();
-		auto& pushConstants		= s_Data->GetCurrentEffect().params;
-		auto  pipelineLayout	= currentEffect.computePipeline->GetLayout();
-		auto  pipeline			= currentEffect.computePipeline->GetRaw();
+		auto  cmdBuffer	= s_Frames[s_CurrentFrameIndex]->GetCmdBuffer();
 
 		// ========================================================
-		// Compute Dispatch
+		// Draw
 		// ========================================================
-		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &set, 0, nullptr);
-		vkCmdPushConstants(cmdBuffer, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(EffectParams), &pushConstants);
-		Dispatch(cmdBuffer, 80, 45, 1);
+		DrawTriangle(cmdBuffer);
 
 		// ========================================================
 		// End

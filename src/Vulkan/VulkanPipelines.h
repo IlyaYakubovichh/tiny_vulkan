@@ -2,39 +2,57 @@
 
 #include "VulkanShader.h"
 #include <memory>
+#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace tiny_vulkan {
 
 	enum class PipelineType
 	{
-		GRAPHICS, 
+		GRAPHICS,
 		COMPUTE,
 		RAY_TRACING
 	};
 
 	class VulkanPipeline;
 
-	class VkPipelineBuilder
+	class VulkanPipelineBuilder
 	{
 	public:
-		VkPipelineBuilder() = default;
-		~VkPipelineBuilder() = default;
+		VulkanPipelineBuilder() = default;
+		~VulkanPipelineBuilder() = default;
 
-		VkPipelineBuilder& SetPipelineType(PipelineType type);
-		VkPipelineBuilder& LayoutAddDescriptorLayout(VkDescriptorSetLayout layout);
-		VkPipelineBuilder& LayoutAddPushRange(VkPushConstantRange range);
-		VkPipelineBuilder& AddShader(std::shared_ptr<VulkanShader> shader);
+		VulkanPipelineBuilder& SetPipelineType(PipelineType type);
+		VulkanPipelineBuilder& LayoutAddDescriptorLayout(VkDescriptorSetLayout layout);
+		VulkanPipelineBuilder& LayoutAddPushRange(VkPushConstantRange range);
+		VulkanPipelineBuilder& AddShader(std::shared_ptr<VulkanShader> shader);
+
+		VulkanPipelineBuilder& SetColorAttachmentFormats(const std::vector<VkFormat>& formats);
+		VulkanPipelineBuilder& SetDepthFormat(VkFormat format);
+		VulkanPipelineBuilder& SetTopology(VkPrimitiveTopology topology);
+		VulkanPipelineBuilder& SetPolygonMode(VkPolygonMode mode);
+		VulkanPipelineBuilder& SetCullMode(VkCullModeFlags cullMode);
+		VulkanPipelineBuilder& SetFrontFace(VkFrontFace frontFace);
 		std::shared_ptr<VulkanPipeline> Build();
 
 	private:
-		std::shared_ptr<VulkanPipeline> BuildCompute();
+		bool BuildPipelineLayout(VkDevice device);
+		std::shared_ptr<VulkanPipeline> BuildCompute(VkDevice device);
+		std::shared_ptr<VulkanPipeline> BuildGraphics(VkDevice device);
 
 	private:
-		PipelineType						m_Type;
-		std::shared_ptr<VulkanShader>		m_Shader;
-		std::vector<VkDescriptorSetLayout>	m_DescriptorSetLayouts;
-		std::vector<VkPushConstantRange>	m_Ranges;
+		PipelineType									m_Type{ PipelineType::GRAPHICS };
+		VkPipelineLayout								m_PipelineLayout{ VK_NULL_HANDLE };
+		std::vector<std::shared_ptr<VulkanShader>>		m_Shaders;
+		std::vector<VkDescriptorSetLayout>				m_DescriptorSetLayouts;
+		std::vector<VkPushConstantRange>				m_Ranges;
+
+		std::vector<VkFormat>							m_ColorFormats; 
+		VkFormat										m_DepthFormat{ VK_FORMAT_UNDEFINED };
+		VkPrimitiveTopology								m_Topology{ VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST };
+		VkPolygonMode									m_PolygonMode{ VK_POLYGON_MODE_FILL };
+		VkCullModeFlags									m_CullMode{ VK_CULL_MODE_BACK_BIT };
+		VkFrontFace										m_FrontFace{ VK_FRONT_FACE_CLOCKWISE };
 	};
 
 	class VulkanPipeline
@@ -42,9 +60,9 @@ namespace tiny_vulkan {
 	public:
 		VulkanPipeline(VkPipeline pipeline, VkPipelineLayout pipelineLayout);
 		~VulkanPipeline();
-		
-		auto GetRaw() const { return m_Pipeline; }
-		auto GetLayout() const { return m_PipelineLayout; }
+
+		VkPipeline GetRaw() const { return m_Pipeline; }
+		VkPipelineLayout GetLayout() const { return m_PipelineLayout; }
 
 	private:
 		VkPipeline m_Pipeline{ VK_NULL_HANDLE };

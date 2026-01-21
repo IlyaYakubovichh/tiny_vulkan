@@ -113,25 +113,7 @@ namespace tiny_vulkan {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		// ========================================================
-		// Opportunity to select effect index and push constants
-		// ========================================================
-		if (ImGui::Begin("Backgroud"))
-		{
-			auto& rendererData	 = VulkanRenderer::GetRendererData();
-			auto& effects		 = rendererData->GetEffects();
-			auto& computeEffect  = rendererData->GetCurrentEffect();
-
-			ImGui::Text("Selected effect", computeEffect.name);
-
-			ImGui::SliderInt("Effect index", &ComputeEffect::m_SelectedEffectIndex, 0, effects.size() - 1);
-
-			ImGui::InputFloat4("data1", (float*)&computeEffect.params.values[0]);
-			ImGui::InputFloat4("data2", (float*)&computeEffect.params.values[1]);
-			ImGui::InputFloat4("data3", (float*)&computeEffect.params.values[2]);
-			ImGui::InputFloat4("data4", (float*)&computeEffect.params.values[3]);
-		}
-		ImGui::End();
+		ImGui::ShowDemoWindow();
 
 		ImGui::Render();
 	}
