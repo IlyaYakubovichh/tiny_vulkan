@@ -196,6 +196,7 @@ namespace tiny_vulkan {
 		// ========================================================
 		// Rasterization
 		// ========================================================
+		// How triangles are raster between vertex and fragment shader
 		VkPipelineRasterizationStateCreateInfo rasterizerInfo = {};
 		rasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizerInfo.polygonMode = m_PolygonMode; 
@@ -234,7 +235,11 @@ namespace tiny_vulkan {
 		// Color blend
 		// ========================================================
 		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.colorWriteMask = // which components are enabled for writing
+			VK_COLOR_COMPONENT_R_BIT | 
+			VK_COLOR_COMPONENT_G_BIT | 
+			VK_COLOR_COMPONENT_B_BIT | 
+			VK_COLOR_COMPONENT_A_BIT; 
 		colorBlendAttachment.blendEnable = VK_FALSE;
 
 		VkPipelineColorBlendStateCreateInfo blendInfo = {};

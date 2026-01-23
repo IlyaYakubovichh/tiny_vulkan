@@ -6,6 +6,7 @@
 #include "RendererData.h"
 #include <glm/glm.hpp>
 #include <memory>
+#include <span>
 #include <vector>
 
 namespace tiny_vulkan {
@@ -19,10 +20,11 @@ namespace tiny_vulkan {
 		~VulkanRenderer() = delete;
 
 		static void Run();
+		static void ImmediateSubmit(std::function<void(VkCommandBuffer cmdBuffer)>&& func);
 
-		[[nodiscard]] static auto& GetRendererData() { return s_Data; }
-		[[nodiscard]] static auto GetWindow()	{ return s_Window; }
-		[[nodiscard]] static auto GetCore()		{ return s_VulkanCore; }
+		[[nodiscard]] static auto&	GetRendererData()	{ return s_Data; }
+		[[nodiscard]] static auto	GetWindow()			{ return s_Window; }
+		[[nodiscard]] static auto	GetCore()			{ return s_VulkanCore; }
 
 	private:
 		static void Initialize();
@@ -32,7 +34,7 @@ namespace tiny_vulkan {
 		static void OnUpdate();
 		static void Clear(VkCommandBuffer cmd, glm::vec3 color);
 		static void Dispatch(VkCommandBuffer cmdBuffer, uint32_t groupX, uint32_t groupY, uint32_t groupZ);
-		static void DrawTriangle(VkCommandBuffer cmdBuffer);
+		static void DrawRectangle(VkCommandBuffer cmdBuffer);
 
 	private:
 		static std::shared_ptr<RendererData>	s_Data;

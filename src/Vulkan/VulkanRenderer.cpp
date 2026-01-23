@@ -246,7 +246,7 @@ namespace tiny_vulkan {
 		vkCmdDispatch(cmdBuffer, groupX, groupY, groupZ);
 	}
 
-	void VulkanRenderer::DrawTriangle(VkCommandBuffer cmdBuffer)
+	void VulkanRenderer::DrawRectangle(VkCommandBuffer cmdBuffer)
 	{
 		auto renderTarget = s_VulkanCore->GetRenderTarget();
 		VkExtent3D renderTargetExtent = renderTarget->GetExtent();
@@ -286,8 +286,6 @@ namespace tiny_vulkan {
 		// Begin render pass
 		// ========================================================
 		vkCmdBeginRendering(cmdBuffer, &renderingInfo);
-		
-		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data->GetPipeline()->GetRaw());
 
 		VkViewport viewport = {};
 		viewport.x = 0;
@@ -305,7 +303,15 @@ namespace tiny_vulkan {
 		scissor.extent.height = renderTargetExtent.height;
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data->GetPipeline()->GetRaw());
+
+		PushConstants push_constants;
+		push_constants.worldMatrix = glm::mat4{ 1.f };
+		push_constants.vertexBufferAddress = s_Data->GetMeshBuffers().vertexBufferAddress;
+		vkCmdPushConstants(cmdBuffer, s_Data->GetPipeline()->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push_constants);
+
+		vkCmdBindIndexBuffer(cmdBuffer, s_Data->GetMeshBuffers().indexBuffer->GetRaw(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
 
 		vkCmdEndRendering(cmdBuffer);
 	}
@@ -322,12 +328,53 @@ namespace tiny_vulkan {
 		// ========================================================
 		// Draw
 		// ========================================================
-		DrawTriangle(cmdBuffer);
+		DrawRectangle(cmdBuffer);
 
 		// ========================================================
 		// End
 		// ========================================================
 		EndFrame();
+	}
+
+	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmdBuffer)>&& func)
+	{
+		auto device = s_VulkanCore->GetDevice();
+		VkCommandBuffer immediateCommandBuffer = s_Data->GetImmediateCmdBuffer();
+		VkFence immediateFence = s_Data->GetImmediateFence();
+		VkQueue graphicsQueue = s_VulkanCore->GetGraphicsQueue();
+
+		CHECK_VK_RES(vkResetFences(device, 1, &immediateFence));
+
+		CHECK_VK_RES(vkResetCommandBuffer(immediateCommandBuffer, 0));
+
+		VkCommandBufferBeginInfo beginInfo = {};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.pNext = nullptr;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		beginInfo.pInheritanceInfo = nullptr;
+		CHECK_VK_RES(vkBeginCommandBuffer(immediateCommandBuffer, &beginInfo));
+
+		func(immediateCommandBuffer);
+
+		vkEndCommandBuffer(immediateCommandBuffer);
+
+		VkCommandBufferSubmitInfo cmdBufferSubmitInfo = {};
+		cmdBufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+		cmdBufferSubmitInfo.pNext = nullptr;
+		cmdBufferSubmitInfo.deviceMask = 0;
+		cmdBufferSubmitInfo.commandBuffer = immediateCommandBuffer;
+
+		VkSubmitInfo2 submitInfo = {};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+		submitInfo.waitSemaphoreInfoCount = 0;
+		submitInfo.pWaitSemaphoreInfos = nullptr;
+		submitInfo.signalSemaphoreInfoCount = 0;
+		submitInfo.pSignalSemaphoreInfos = nullptr;
+		submitInfo.commandBufferInfoCount = 1;
+		submitInfo.pCommandBufferInfos = &cmdBufferSubmitInfo;
+		CHECK_VK_RES(vkQueueSubmit2(graphicsQueue, 1, &submitInfo, immediateFence));
+
+		vkWaitForFences(device, 1, &immediateFence, VK_TRUE, UINT32_MAX);
 	}
 
 	void VulkanRenderer::Run()
