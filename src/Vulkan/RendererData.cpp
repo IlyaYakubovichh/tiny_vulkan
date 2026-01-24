@@ -28,7 +28,6 @@ namespace tiny_vulkan {
 			.SetAllocationPlace(VMA_MEMORY_USAGE_GPU_ONLY)
 			.SetUsageMask(
 				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT	| 
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT	| 
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT	|
 				VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
 			.Build();
@@ -148,29 +147,8 @@ namespace tiny_vulkan {
 
 	void RendererData::PrepareData()
 	{
-		std::array<Vertex, 4> rect_vertices;
-
-		rect_vertices[0].position = { 0.5,-0.5, 0 };
-		rect_vertices[1].position = { 0.5,0.5, 0 };
-		rect_vertices[2].position = { -0.5,-0.5, 0 };
-		rect_vertices[3].position = { -0.5,0.5, 0 };
-
-		rect_vertices[0].color = { 0,0, 0,1 };
-		rect_vertices[1].color = { 0.5,0.5,0.5 ,1 };
-		rect_vertices[2].color = { 1,0, 0,1 };
-		rect_vertices[3].color = { 0,1, 0,1 };
-
-		std::array<uint32_t, 6> rect_indices;
-
-		rect_indices[0] = 0;
-		rect_indices[1] = 1;
-		rect_indices[2] = 2;
-
-		rect_indices[3] = 2;
-		rect_indices[4] = 1;
-		rect_indices[5] = 3;
-
-		m_MeshBuffers = UploadMesh(rect_vertices, rect_indices);
+		std::filesystem::path wd = std::filesystem::current_path() / ".." / "src" / "EntryPoint" / "Assets";
+		m_Meshes = Loader::LoadGltfMeshes(wd / "basicmesh.glb").value();
 	}
 
 }

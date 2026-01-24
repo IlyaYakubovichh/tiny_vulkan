@@ -118,6 +118,13 @@ target_link_libraries(tiny_vulkan PUBLIC
 )
 
 
+# ------------------------------------
+# fastgltf library 
+# ------------------------------------
+add_subdirectory(third_party/fastgltf)
+target_link_libraries(tiny_vulkan PUBLIC fastgltf)
+
+
 # Finish
 # Puts deps in Folder CMakeDeps in IDE
 function(group_third_party target_name)
@@ -133,3 +140,4 @@ group_third_party(spdlog)
 group_third_party(vk-bootstrap)
 group_third_party(glm)
 group_third_party(vma)
+group_third_party(fastgltf)

@@ -6,6 +6,10 @@
 #include "VulkanUtils.h"
 #include "LogSystem.h"
 #include <filesystem>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+
 
 namespace tiny_vulkan {
 
@@ -303,15 +307,24 @@ namespace tiny_vulkan {
 		scissor.extent.height = renderTargetExtent.height;
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data->GetPipeline()->GetRaw());
+		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, s_Data->m_MeshPipeline->GetRaw());
+
+		glm::mat4 view = glm::translate(glm::vec3{0,0,-5});
+		glm::mat4 projection = glm::perspective(
+			glm::radians(40.f),       // FOV
+			(float)1280 / (float)720, // Aspect Ratio
+			0.1f,                     // zNear 
+			10000.f                   // zFar 
+		);
+		projection[1][1] *= -1; 
 
 		PushConstants push_constants;
-		push_constants.worldMatrix = glm::mat4{ 1.f };
-		push_constants.vertexBufferAddress = s_Data->GetMeshBuffers().vertexBufferAddress;
-		vkCmdPushConstants(cmdBuffer, s_Data->GetPipeline()->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push_constants);
+		push_constants.worldMatrix = projection * view;
+		push_constants.vertexBufferAddress = s_Data->m_Meshes[2]->meshBuffers.vertexBufferAddress;
+		vkCmdPushConstants(cmdBuffer, s_Data->m_MeshPipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &push_constants);
 
-		vkCmdBindIndexBuffer(cmdBuffer, s_Data->GetMeshBuffers().indexBuffer->GetRaw(), 0, VK_INDEX_TYPE_UINT32);
-		vkCmdDrawIndexed(cmdBuffer, 6, 1, 0, 0, 0);
+		vkCmdBindIndexBuffer(cmdBuffer, s_Data->m_Meshes[2]->meshBuffers.indexBuffer->GetRaw(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdDrawIndexed(cmdBuffer, s_Data->m_Meshes[2]->surfaces[0].count, 1, s_Data->m_Meshes[2]->surfaces[0].startIndex, 0, 0);
 
 		vkCmdEndRendering(cmdBuffer);
 	}
@@ -339,8 +352,8 @@ namespace tiny_vulkan {
 	void VulkanRenderer::ImmediateSubmit(std::function<void(VkCommandBuffer cmdBuffer)>&& func)
 	{
 		auto device = s_VulkanCore->GetDevice();
-		VkCommandBuffer immediateCommandBuffer = s_Data->GetImmediateCmdBuffer();
-		VkFence immediateFence = s_Data->GetImmediateFence();
+		VkCommandBuffer immediateCommandBuffer = s_Data->m_ImmediateCmdBuffer;
+		VkFence immediateFence = s_Data->m_ImmediateFence;
 		VkQueue graphicsQueue = s_VulkanCore->GetGraphicsQueue();
 
 		CHECK_VK_RES(vkResetFences(device, 1, &immediateFence));
