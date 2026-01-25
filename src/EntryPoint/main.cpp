@@ -1,10 +1,9 @@
-#include "VulkanRenderer.h"
-#include "VulkanShader.h"
-#include <filesystem>
+#include "Application.h"
 
 int main()
 {
-    tiny_vulkan::VulkanRenderer::Run();
+    tiny_vulkan::Application application;
+    application.Run();
 
     return 0;
 }

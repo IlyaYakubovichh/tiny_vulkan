@@ -100,13 +100,12 @@ FetchContent_Declare(
   URL https://github.com/g-truc/glm/archive/refs/tags/1.0.2.tar.gz
 )
 FetchContent_MakeAvailable(glm)
-target_link_libraries(tiny_vulkan PUBLIC 
+target_link_libraries(tiny_vulkan PUBLIC
 	glm::glm
 )
 
-
 # ------------------------------------
-# vma library via FetchContent
+# vma library
 # ------------------------------------
 FetchContent_Declare(
 	vma
@@ -121,8 +120,14 @@ target_link_libraries(tiny_vulkan PUBLIC
 # ------------------------------------
 # fastgltf library 
 # ------------------------------------
-add_subdirectory(third_party/fastgltf)
-target_link_libraries(tiny_vulkan PUBLIC fastgltf)
+FetchContent_Declare(
+    fastgltf
+    URL https://github.com/spnda/fastgltf/archive/refs/tags/v0.9.0.tar.gz
+)
+FetchContent_MakeAvailable(fastgltf)
+target_link_libraries(tiny_vulkan PUBLIC 
+	fastgltf::fastgltf
+)
 
 
 # Finish

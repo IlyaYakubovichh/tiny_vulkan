@@ -1,0 +1,53 @@
+#include "VulkanSwapchain.h"
+#include "VkBootstrap.h"
+
+namespace tiny_vulkan {
+
+	VulkanSwapchain::VulkanSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, uint32_t width, uint32_t height)
+	{
+		// ========================================================
+		// Configuration
+		// ========================================================
+		const VkFormat desiredFormat = VK_FORMAT_R8G8B8A8_UNORM;
+		const VkColorSpaceKHR desiredColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		const VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR; // V-Sync enabled by default
+
+		// ========================================================
+		// Builder
+		// ========================================================
+		vkb::SwapchainBuilder swapchainBuilder{ physicalDevice, device, surface };
+
+		auto vkbSwapchainResult = swapchainBuilder
+			.set_desired_format(VkSurfaceFormatKHR{ .format = desiredFormat, .colorSpace = desiredColorSpace })
+			.set_desired_present_mode(desiredPresentMode)
+			.set_desired_extent(width, height)
+			.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+			.build();
+
+		vkb::Swapchain vkbSwapchain = vkbSwapchainResult.value();
+		m_Swapchain = vkbSwapchain.swapchain;
+		m_Format = vkbSwapchain.image_format;
+		m_Extent = vkbSwapchain.extent;
+
+		// ========================================================
+		// Wrap Images
+		// ========================================================
+		// vkb::Swapchain helper returns std::vector<VkImage> and std::vector<VkImageView>
+		auto images = vkbSwapchain.get_images().value();
+		auto views = vkbSwapchain.get_image_views().value();
+
+		m_Images.reserve(images.size());
+
+		for (size_t i = 0; i < images.size(); ++i)
+		{
+			m_Images.push_back(std::make_shared<VulkanImage>(
+				images[i],
+				views[i],
+				m_Format,
+				VkExtent3D{ .width = m_Extent.width, .height = m_Extent.height, .depth = 1 },
+				VmaAllocation{ VK_NULL_HANDLE } 
+			));
+		}
+	}
+
+}

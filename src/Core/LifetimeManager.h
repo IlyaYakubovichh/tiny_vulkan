@@ -2,34 +2,18 @@
 
 #include <functional>
 
-namespace tiny_vulkan {
+namespace tiny_vulkan::LifetimeManager {
 
-	class LifetimeManager
+	template<typename F, typename... Args>
+	void PushFunction(F&& function, Args&&... args)
 	{
-	public:
-		LifetimeManager() = default;
-		~LifetimeManager() = default;
-
-		template<typename F, typename... Args>
-		static void PushFunction(F& function, Args&&... args)
-		{
-			m_Deleters.push_back([=]() -> void
-				{
-					function(args...);
-				});
-		}
-
-		static void ExecuteAll()
-		{
-			for (auto it = m_Deleters.rbegin(); it != m_Deleters.rend(); ++it)
+		RegisterDeleter([func = std::forward<F>(function), ...args = std::forward<Args>(args)]() mutable
 			{
-				(*it)();
-			}
-			m_Deleters.clear();
-		}
+				std::invoke(func, args...);
+			});
+	}
 
-	private:
-		static std::vector<std::function<void()>> m_Deleters;
-	};
+	void RegisterDeleter(std::function<void()>&& deleter);
 
+	void ExecuteAll();
 }
