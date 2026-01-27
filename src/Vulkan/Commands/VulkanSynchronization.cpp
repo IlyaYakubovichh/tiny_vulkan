@@ -3,12 +3,12 @@
 namespace tiny_vulkan::Synchronization {
 
 	void CmdImageMemoryBarrier(
-		VkCommandBuffer			cmdBuffer,
-		VulkanImage*			image,
-		VkPipelineStageFlags2	dstStage,
-		VkAccessFlags2			dstAccess,
-		VkImageLayout			newLayout,
-		VkImageAspectFlags		aspectMask)
+		VkCommandBuffer					cmdBuffer,
+		std::shared_ptr<VulkanImage>	image,
+		VkPipelineStageFlags2			dstStage,
+		VkAccessFlags2					dstAccess,
+		VkImageLayout					newLayout,
+		VkImageAspectFlags				aspectMask)
 	{
 		auto& syncState = image->GetSyncState();
 

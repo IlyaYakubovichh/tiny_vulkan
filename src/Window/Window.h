@@ -2,7 +2,6 @@
 
 #include <string>
 #include <cstdint>
-#include <memory>
 #include <GLFW/glfw3.h>
 
 namespace tiny_vulkan {

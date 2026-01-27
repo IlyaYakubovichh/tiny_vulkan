@@ -1,18 +1,23 @@
 #include "VulkanFrame.h"
+#include "VulkanCore.h"
 #include "LifetimeManager.h"
 
 namespace tiny_vulkan {
 
 	std::vector<VkSemaphore> VulkanFrame::s_RenderSemaphores;
 
-	VulkanFrame::VulkanFrame(VkDevice device, uint32_t queueFamilyIndex, uint32_t swapchainImageCount)
+	VulkanFrame::VulkanFrame()
 	{
+		auto device					= VulkanCore::GetDevice();
+		auto graphicsFamily			= VulkanCore::GetGraphicsFamily();
+		auto swapchainImageCount	= VulkanCore::GetSwapchain()->GetImages().size();
+
 		// ========================================================
 		// VkCommandPool
 		// ========================================================
 		VkCommandPoolCreateInfo poolInfo = { VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		poolInfo.queueFamilyIndex = queueFamilyIndex;
+		poolInfo.queueFamilyIndex = graphicsFamily;
 
 		CHECK_VK_RES(vkCreateCommandPool(device, &poolInfo, nullptr, &m_Pool));
 

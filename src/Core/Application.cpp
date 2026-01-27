@@ -1,20 +1,24 @@
 #include "Application.h"
+#include "VulkanCore.h"
 #include "LifetimeManager.h"
 #include "LogSystem.h"
 
 namespace tiny_vulkan {
 
-	Application::Application() 
+	Application::Application(const ApplicationSpec& appSpec)
 	{
 		LogSystem::Initialize();
-		m_Window = std::make_shared<Window>(1280, 720, "TinyVulkan");
-		m_Core = std::make_shared<VulkanCore>(m_Window); 
-		m_Renderer = std::make_shared<VulkanRenderer>(m_Window, m_Core);
+
+		m_Window = std::make_shared<Window>(appSpec.windowWidth, appSpec.windowHeight, appSpec.windowName);
+
+		VulkanCore::Initialize(m_Window);
+
+		m_Renderer = std::make_shared<VulkanRenderer>(m_Window);
 	}
 
 	Application::~Application() 
 	{
-		LifetimeManager::PushFunction(vkDeviceWaitIdle, m_Core->GetDevice());
+		LifetimeManager::PushFunction(vkDeviceWaitIdle, VulkanCore::GetDevice());
 		LifetimeManager::ExecuteAll(); 
 	}
 
@@ -23,6 +27,7 @@ namespace tiny_vulkan {
 		while (!m_Window->ShouldClose()) 
 		{
 			m_Window->OnUpdate();
+			m_Renderer->Draw();
 		}
 	}
 }

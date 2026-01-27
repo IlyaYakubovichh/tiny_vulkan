@@ -18,7 +18,8 @@ namespace tiny_vulkan::LifetimeManager {
 		// Iterate in reverse order (LIFO)
 		for (auto it = g_Deleters.rbegin(); it != g_Deleters.rend(); ++it)
 		{
-			if (*it) {
+			if (*it) 
+			{
 				(*it)();
 			}
 		}

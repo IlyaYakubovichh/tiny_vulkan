@@ -1,9 +1,10 @@
 #pragma once
 
 #include "VulkanShader.h" 
-#include <vulkan/vulkan.h>
+
 #include <memory>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 namespace tiny_vulkan {
 
@@ -34,35 +35,35 @@ namespace tiny_vulkan {
 	// ========================================================
 	// Pipeline Builder
 	// ========================================================
-	class PipelineBuilder
+	class VulkanPipelineBuilder
 	{
 	public:
-		PipelineBuilder() = default;
+		VulkanPipelineBuilder() = default;
 
-		PipelineBuilder& SetPipelineType(PipelineType type);
+		[[nodiscard]] VulkanPipelineBuilder& SetPipelineType(PipelineType type);
 
 		// Layout Setup
-		PipelineBuilder& AddDescriptorLayout(VkDescriptorSetLayout layout);
-		PipelineBuilder& AddPushConstantRange(VkPushConstantRange range);
+		[[nodiscard]] VulkanPipelineBuilder& AddDescriptorLayout(VkDescriptorSetLayout layout);
+		[[nodiscard]] VulkanPipelineBuilder& AddPushConstantRange(VkPushConstantRange range);
 
 		// Shader Stages
-		PipelineBuilder& AddShader(std::shared_ptr<VulkanShader> shader);
+		[[nodiscard]] VulkanPipelineBuilder& AddShader(std::shared_ptr<VulkanShader> shader);
 
 		// Graphics Configuration
-		PipelineBuilder& SetColorAttachmentFormats(const std::vector<VkFormat>& formats);
-		PipelineBuilder& SetDepthFormat(VkFormat format);
-		PipelineBuilder& SetTopology(VkPrimitiveTopology topology);
-		PipelineBuilder& SetPolygonMode(VkPolygonMode mode);
-		PipelineBuilder& SetCullMode(VkCullModeFlags cullMode);
-		PipelineBuilder& SetFrontFace(VkFrontFace frontFace);
+		[[nodiscard]] VulkanPipelineBuilder& SetColorAttachmentFormats(const std::vector<VkFormat>& formats);
+		[[nodiscard]] VulkanPipelineBuilder& SetDepthFormat(VkFormat format);
+		[[nodiscard]] VulkanPipelineBuilder& SetTopology(VkPrimitiveTopology topology);
+		[[nodiscard]] VulkanPipelineBuilder& SetPolygonMode(VkPolygonMode mode);
+		[[nodiscard]] VulkanPipelineBuilder& SetCullMode(VkCullModeFlags cullMode);
+		[[nodiscard]] VulkanPipelineBuilder& SetFrontFace(VkFrontFace frontFace);
 
 		// Build
-		[[nodiscard]] std::shared_ptr<VulkanPipeline> Build(VkDevice device);
+		[[nodiscard]] std::shared_ptr<VulkanPipeline> Build();
 
 	private:
-		bool BuildPipelineLayout(VkDevice device);
-		std::shared_ptr<VulkanPipeline> BuildCompute(VkDevice device);
-		std::shared_ptr<VulkanPipeline> BuildGraphics(VkDevice device);
+		[[nodiscard]] bool BuildPipelineLayout();
+		[[nodiscard]] std::shared_ptr<VulkanPipeline> BuildCompute();
+		[[nodiscard]] std::shared_ptr<VulkanPipeline> BuildGraphics();
 
 	private:
 		PipelineType									m_Type{ PipelineType::GRAPHICS };

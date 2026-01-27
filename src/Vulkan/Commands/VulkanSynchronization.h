@@ -1,6 +1,8 @@
 #pragma once
 
 #include "VulkanImage.h"
+
+#include <memory>
 #include <vulkan/vulkan.h>
 
 namespace tiny_vulkan::Synchronization {
@@ -10,12 +12,12 @@ namespace tiny_vulkan::Synchronization {
 	 * Updates the internal SyncState of the VulkanImage.
 	 */
 	void CmdImageMemoryBarrier(
-		VkCommandBuffer			cmdBuffer,
-		VulkanImage*			image,
-		VkPipelineStageFlags2	dstStage,
-		VkAccessFlags2			dstAccess,
-		VkImageLayout			newLayout,
-		VkImageAspectFlags		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT
+		VkCommandBuffer					cmdBuffer,
+		std::shared_ptr<VulkanImage>	image,
+		VkPipelineStageFlags2			dstStage,
+		VkAccessFlags2					dstAccess,
+		VkImageLayout					newLayout,
+		VkImageAspectFlags				aspectMask = VK_IMAGE_ASPECT_COLOR_BIT
 	);
 
 }

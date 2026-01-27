@@ -1,16 +1,17 @@
 #pragma once
 
 #include "VulkanImage.h"
-#include <vulkan/vulkan.h>
+
 #include <vector>
 #include <memory>
+#include <vulkan/vulkan.h>
 
 namespace tiny_vulkan {
 
 	class VulkanSwapchain
 	{
 	public:
-		explicit VulkanSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, uint32_t width, uint32_t height);
+		explicit VulkanSwapchain(uint32_t width, uint32_t height);
 		~VulkanSwapchain() = default;
 
 		VulkanSwapchain(const VulkanSwapchain&) = delete;

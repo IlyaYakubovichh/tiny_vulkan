@@ -1,34 +1,26 @@
 #pragma once
 
 #include "Window.h"
-#include "VulkanCore.h"
+#include "VulkanImage.h"
 
+#include <memory>
 #include <vulkan/vulkan.h>
 
 namespace tiny_vulkan {
 
-	struct ImGuiOnUpdatePackage
-	{
-		VkCommandBuffer cmdBuffer;
-		VkImageView		imageView;
-		VkImageLayout	imageLayout;
-		VkExtent3D		extent;
-	};
-
 	class ImGuiRenderer
 	{
 	public:
-		ImGuiRenderer(std::shared_ptr<Window> window, std::shared_ptr<VulkanCore> core);
+		ImGuiRenderer(std::shared_ptr<Window> window);
 		~ImGuiRenderer() = default;
 
-		void OnUpdate(const ImGuiOnUpdatePackage& package);
+		void DrawImGui(std::shared_ptr<VulkanImage> swapchainImage);
 
 	private:
-		void CalculateInternal();
+		void Render();
 
 	private:
 		VkDescriptorPool			 m_Pool{ VK_NULL_HANDLE };
-		std::shared_ptr<VulkanCore>  m_Core;
 		std::shared_ptr<Window>		 m_Window;
 	};
 

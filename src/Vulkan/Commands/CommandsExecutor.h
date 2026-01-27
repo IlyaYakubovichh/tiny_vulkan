@@ -4,8 +4,6 @@
 #include <functional>
 #include <memory>
 
-namespace tiny_vulkan { class VulkanCore; }
-
 namespace tiny_vulkan {
 
 	class CommandExecutor 
@@ -13,7 +11,7 @@ namespace tiny_vulkan {
 	public:
 		CommandExecutor() = delete;
 
-		static void Initialize(std::shared_ptr<VulkanCore> core);
+		static void Initialize();
 		static void Execute(std::function<void(VkCommandBuffer cmd)>&& func);
 
 	private:

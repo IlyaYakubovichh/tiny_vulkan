@@ -1,16 +1,23 @@
 #pragma once
 
+#include "VulkanPipeline.h"
+#include "VulkanShader.h"
+#include <memory>
+#include <glm/glm.hpp>
+#include <vulkan/vulkan.h>
+
 namespace tiny_vulkan {
 
 	struct ScenePushConstants
 	{
-
+		glm::mat4 worldMatrix;
+		VkDeviceAddress vertexBufferAddress;
 	};
 
 	class Scene
 	{
 	public:
-		Scene() = default;
+		Scene();
 		~Scene() = default;
 
 		Scene(const Scene&) = delete;
@@ -18,6 +25,12 @@ namespace tiny_vulkan {
 
 		// Required commands in order to draw a scene (renderer will call it).
 		void Render();
+
+	private:
+		ScenePushConstants m_SceneConstants;
+		std::shared_ptr<VulkanPipeline> m_Pipeline;
+		std::shared_ptr<VulkanShader> m_VertexShader;
+		std::shared_ptr<VulkanShader> m_FragmentShader;
 	};
 
 }

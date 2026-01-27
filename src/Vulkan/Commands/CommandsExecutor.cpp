@@ -13,19 +13,25 @@ namespace tiny_vulkan {
 	VkFence			CommandExecutor::s_Fence;
 	bool            CommandExecutor::s_Initialized = false;
 
-	void CommandExecutor::Initialize(std::shared_ptr<VulkanCore> core) 
+	void CommandExecutor::Initialize() 
 	{
-		if (s_Initialized) return;
+		if (s_Initialized)
+		{
+			return;
+		}
+		else
+		{
+			s_Initialized = true;
+		}
 
-		s_Initialized = true;
-
-		s_Device = core->GetDevice();
+		s_Device = VulkanCore::GetDevice();
+		s_GraphicsQueue = VulkanCore::GetGraphicsQueue();
 
 		// Pool
 		VkCommandPoolCreateInfo poolInfo = {};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		poolInfo.queueFamilyIndex = core->GetGraphicsFamily();
+		poolInfo.queueFamilyIndex = VulkanCore::GetGraphicsFamily();
 		CHECK_VK_RES(vkCreateCommandPool(s_Device, &poolInfo, nullptr, &s_CommandPool));
 
 		// Allocate

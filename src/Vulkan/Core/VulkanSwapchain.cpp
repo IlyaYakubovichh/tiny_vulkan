@@ -1,16 +1,21 @@
 #include "VulkanSwapchain.h"
+#include "VulkanCore.h"
 #include "VkBootstrap.h"
 
 namespace tiny_vulkan {
 
-	VulkanSwapchain::VulkanSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, uint32_t width, uint32_t height)
+	VulkanSwapchain::VulkanSwapchain(uint32_t width, uint32_t height)
 	{
+		auto device			 = VulkanCore::GetDevice();
+		auto physicalDevice  = VulkanCore::GetPhysicalDevice();
+		auto surface		 = VulkanCore::GetSurface();
+
 		// ========================================================
 		// Configuration
 		// ========================================================
-		const VkFormat desiredFormat = VK_FORMAT_R8G8B8A8_UNORM;
-		const VkColorSpaceKHR desiredColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-		const VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR; // V-Sync enabled by default
+		const VkFormat desiredFormat				= VK_FORMAT_R8G8B8A8_UNORM;
+		const VkColorSpaceKHR desiredColorSpace		= VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		const VkPresentModeKHR desiredPresentMode	= VK_PRESENT_MODE_FIFO_KHR; // V-Sync enabled by default
 
 		// ========================================================
 		// Builder

@@ -1,4 +1,5 @@
 #include "ImGui/ImGuiRenderer.h"
+#include "VulkanCore.h"
 #include "LifetimeManager.h"
 #include "LogSystem.h"
 
@@ -18,15 +19,18 @@ namespace tiny_vulkan {
 		}
 	}
 
-	ImGuiRenderer::ImGuiRenderer(std::shared_ptr<Window> window, std::shared_ptr<VulkanCore> core)
-		: m_Core(core)
-		, m_Window(window)
+	ImGuiRenderer::ImGuiRenderer(std::shared_ptr<Window> window)
+		: m_Window(window)
 	{
 		// ========================================================
 		// Prepare
 		// ========================================================
-		auto device				= core->GetDevice();
-		auto swapchain			= core->GetSwapchain();
+		auto instance			= VulkanCore::GetInstance();
+		auto physicalDevice		= VulkanCore::GetPhysicalDevice();
+		auto device				= VulkanCore::GetDevice();
+		auto graphicsFamily		= VulkanCore::GetGraphicsFamily();
+		auto graphicsQueue		= VulkanCore::GetGraphicsQueue();
+		auto swapchain			= VulkanCore::GetSwapchain();
 		auto images				= swapchain->GetImages();
 		auto imageCount			= images.size();
 		VkFormat imageFormat	= images[0]->GetFormat();
@@ -76,11 +80,11 @@ namespace tiny_vulkan {
 		// vulkan
 		ImGui_ImplVulkan_InitInfo initInfo = {};
 		initInfo.ApiVersion = VK_API_VERSION_1_4;
-		initInfo.Instance = core->GetInstance();
-		initInfo.PhysicalDevice = core->GetPhysicalDevice();
-		initInfo.Device = core->GetDevice();
-		initInfo.QueueFamily = core->GetGraphicsFamily();
-		initInfo.Queue = core->GetGraphicsQueue();
+		initInfo.Instance = instance;
+		initInfo.PhysicalDevice = physicalDevice;
+		initInfo.Device = device;
+		initInfo.QueueFamily = graphicsFamily;
+		initInfo.Queue = graphicsQueue;
 		initInfo.PipelineCache = VK_NULL_HANDLE;
 		initInfo.DescriptorPool = m_Pool;
 		initInfo.MinImageCount = imageCount;
@@ -103,7 +107,7 @@ namespace tiny_vulkan {
 		LifetimeManager::PushFunction(ImGui_ImplVulkan_Shutdown);
 	}
 
-	void ImGuiRenderer::CalculateInternal()
+	void ImGuiRenderer::Render()
 	{
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -114,23 +118,26 @@ namespace tiny_vulkan {
 		ImGui::Render();
 	}
 
-	void ImGuiRenderer::OnUpdate(const ImGuiOnUpdatePackage& package)
+	void ImGuiRenderer::DrawImGui(std::shared_ptr<VulkanImage> swapchainImage)
 	{
-		CalculateInternal();
+		auto cmdBuffer = VulkanCore::GetCurrentFrame()->GetCmdBuffer();
+
+		Render();
 
 		VkRenderingAttachmentInfo attachmentInfo = {};
 		attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 		attachmentInfo.pNext = nullptr;
-		attachmentInfo.imageView = package.imageView;
-		attachmentInfo.imageLayout = package.imageLayout;
+		attachmentInfo.imageView = swapchainImage->GetView();
+		attachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
+		VkExtent3D swapchainImageExtent = swapchainImage->GetExtent();
 		VkRenderingInfo renderingInfo = {};
 		renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 		renderingInfo.pNext = nullptr;
 		renderingInfo.flags = 0;
-		renderingInfo.renderArea = VkRect2D{ {0,0}, {package.extent.width, package.extent.height} };
+		renderingInfo.renderArea = VkRect2D{ {0,0}, {swapchainImageExtent.width, swapchainImageExtent.height} };
 		renderingInfo.layerCount = 1;
 		renderingInfo.viewMask = 0;
 		renderingInfo.colorAttachmentCount = 1;
@@ -138,11 +145,11 @@ namespace tiny_vulkan {
 		renderingInfo.pDepthAttachment = nullptr;
 		renderingInfo.pStencilAttachment = nullptr;
 
-		vkCmdBeginRendering(package.cmdBuffer, &renderingInfo);
+		vkCmdBeginRendering(cmdBuffer, &renderingInfo);
 
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), package.cmdBuffer);
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
 
-		vkCmdEndRendering(package.cmdBuffer);
+		vkCmdEndRendering(cmdBuffer);
 	}
 
 }

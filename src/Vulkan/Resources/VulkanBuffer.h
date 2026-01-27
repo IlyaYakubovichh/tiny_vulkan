@@ -9,7 +9,7 @@ namespace tiny_vulkan {
 	class VulkanBuffer
 	{
 	public:
-		VulkanBuffer(VkBuffer buffer, VmaAllocation allocation, VmaAllocationInfo allocationInfo);
+		explicit VulkanBuffer(VkBuffer buffer, VmaAllocation allocation, VmaAllocationInfo allocationInfo);
 		~VulkanBuffer() = default;
 
 		[[nodiscard]] VkBuffer			GetRaw()			const { return m_Buffer; }
@@ -25,14 +25,14 @@ namespace tiny_vulkan {
 	class VulkanBufferBuilder
 	{
 	public:
-		VulkanBufferBuilder() = default;
+		explicit VulkanBufferBuilder() = default;
 		~VulkanBufferBuilder() = default;
 
-		VulkanBufferBuilder& SetAllocator(VmaAllocator allocator);
-		VulkanBufferBuilder& SetAllocationSize(size_t allocSize);
-		VulkanBufferBuilder& SetUsageMask(VkBufferUsageFlags usageMask);
-		VulkanBufferBuilder& SetAllocationPlace(VmaMemoryUsage memoryUsagePlace);
-		std::shared_ptr<VulkanBuffer> Build();
+		[[nodiscard]] VulkanBufferBuilder& SetAllocator(VmaAllocator allocator);
+		[[nodiscard]] VulkanBufferBuilder& SetAllocationSize(size_t allocSize);
+		[[nodiscard]] VulkanBufferBuilder& SetUsageMask(VkBufferUsageFlags usageMask);
+		[[nodiscard]] VulkanBufferBuilder& SetAllocationPlace(VmaMemoryUsage memoryUsagePlace);
+		[[nodiscard]] std::shared_ptr<VulkanBuffer> Build();
 
 	private:
 		size_t				m_AllocSize{ 0 };

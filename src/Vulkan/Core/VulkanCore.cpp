@@ -1,5 +1,6 @@
 #include "VulkanCore.h"
 #include "LifetimeManager.h"
+#include "LogSystem.h"
 
 #ifndef VMA_IMPLEMENTATION
 #define VMA_IMPLEMENTATION
@@ -10,22 +11,50 @@
 
 namespace tiny_vulkan {
 
-	VulkanCore::VulkanCore(std::shared_ptr<Window> window)
-		: m_Window(window)
+	VulkanCore*						 VulkanCore::s_CoreInstance = nullptr;
+	std::shared_ptr<Window>			 VulkanCore::s_Window = nullptr;
+	vkb::Instance					 VulkanCore::s_VkbInstance = {};
+	vkb::PhysicalDevice				 VulkanCore::s_VkbPhysicalDevice = {};
+	VkInstance                       VulkanCore::s_Instance = VK_NULL_HANDLE;
+	VkDebugUtilsMessengerEXT         VulkanCore::s_DebugMessenger = VK_NULL_HANDLE;
+	VkSurfaceKHR                     VulkanCore::s_Surface = VK_NULL_HANDLE;
+	VkPhysicalDevice                 VulkanCore::s_PhysicalDevice = VK_NULL_HANDLE;
+	VkDevice                         VulkanCore::s_Device = VK_NULL_HANDLE;
+	VmaAllocator                     VulkanCore::s_Allocator = VK_NULL_HANDLE;
+	std::shared_ptr<VulkanSwapchain> VulkanCore::s_Swapchain = nullptr;
+	std::shared_ptr<VulkanImage>     VulkanCore::s_RenderTarget = nullptr;
+	uint32_t						 VulkanCore::s_GraphicsFamilyIndex = 0;
+	uint32_t						 VulkanCore::s_PresentFamilyIndex = 0;
+	VkQueue							 VulkanCore::s_GraphicsQueue = VK_NULL_HANDLE;
+	VkQueue							 VulkanCore::s_PresentQueue = VK_NULL_HANDLE;
+
+	std::vector<std::shared_ptr<tiny_vulkan::VulkanFrame>> VulkanCore::s_Frames;
+	uint32_t VulkanCore::s_FlightFrameCount = 3;
+	uint32_t VulkanCore::s_CurrentFrameIndex = 0;
+
+	void VulkanCore::Initialize(std::shared_ptr<Window> window)
 	{
+		s_Window = window;
+
 		CreateInstance();
-		CreateSurface(window->GetRaw());
+		CreateSurface(s_Window->GetRaw());
 		SelectPhysicalDevice();
 		CreateLogicalDevice();
 		CreateAllocator();
 		CreateSwapchain();
 		CreateRenderTarget();
+		CreateFrames();
+	}
+
+	void VulkanCore::AdvanceFrame()
+	{
+		s_CurrentFrameIndex = (s_CurrentFrameIndex + 1) % s_FlightFrameCount;
 	}
 
 	void VulkanCore::CreateInstance()
 	{
 		vkb::InstanceBuilder instanceBuilder;
-		m_VkbInstance = instanceBuilder
+		s_VkbInstance = instanceBuilder
 			.set_app_name("Tiny Vulkan")
 			.request_validation_layers(true)
 			.use_default_debug_messenger()
@@ -33,17 +62,17 @@ namespace tiny_vulkan {
 			.build()
 			.value();
 
-		m_Instance = m_VkbInstance.instance;
-		m_DebugMessenger = m_VkbInstance.debug_messenger;
+		s_Instance = s_VkbInstance.instance;
+		s_DebugMessenger = s_VkbInstance.debug_messenger;
 
-		LifetimeManager::PushFunction(vkDestroyInstance, m_Instance, nullptr);
-		LifetimeManager::PushFunction(vkb::destroy_debug_utils_messenger, m_Instance, m_DebugMessenger, nullptr);
+		LifetimeManager::PushFunction(vkDestroyInstance, s_Instance, nullptr);
+		LifetimeManager::PushFunction(vkb::destroy_debug_utils_messenger, s_Instance, s_DebugMessenger, nullptr);
 	}
 
 	void VulkanCore::CreateSurface(GLFWwindow* window)
 	{
-		CHECK_VK_RES(glfwCreateWindowSurface(m_Instance, window, nullptr, &m_Surface));
-		LifetimeManager::PushFunction(vkDestroySurfaceKHR, m_Instance, m_Surface, nullptr);
+		CHECK_VK_RES(glfwCreateWindowSurface(s_Instance, window, nullptr, &s_Surface));
+		LifetimeManager::PushFunction(vkDestroySurfaceKHR, s_Instance, s_Surface, nullptr);
 	}
 
 	void VulkanCore::SelectPhysicalDevice()
@@ -58,58 +87,64 @@ namespace tiny_vulkan {
 		features12.bufferDeviceAddress = true;
 		features12.descriptorIndexing = true;
 
-		vkb::PhysicalDeviceSelector selector{ m_VkbInstance }; 
-		m_VkbPhysicalDevice = selector
+		vkb::PhysicalDeviceSelector selector{ s_VkbInstance };
+		s_VkbPhysicalDevice = selector
 			.set_minimum_version(1, 4)
 			.set_required_features_13(features13)
 			.set_required_features_12(features12)
-			.set_surface(m_Surface)
+			.set_surface(s_Surface)
 			.select()
 			.value();
 
-		m_PhysicalDevice = m_VkbPhysicalDevice.physical_device;
+		s_PhysicalDevice = s_VkbPhysicalDevice.physical_device;
+
+		VkPhysicalDeviceProperties physicalDeviceProps;
+		vkGetPhysicalDeviceProperties(s_PhysicalDevice, &physicalDeviceProps);
+		LOG_INFO(fmt::runtime("Selected GPU info: \n\t->Device name: {0} \n\t->ApiVersion: {1} \n\t->Driver version: {2}"),
+			physicalDeviceProps.deviceName,
+			physicalDeviceProps.apiVersion,
+			physicalDeviceProps.driverVersion
+		);
 	}
 
 	void VulkanCore::CreateLogicalDevice()
 	{
-		vkb::DeviceBuilder deviceBuilder{ m_VkbPhysicalDevice };
+		vkb::DeviceBuilder deviceBuilder{ s_VkbPhysicalDevice };
 		vkb::Device vkbDevice = deviceBuilder.build().value();
 
-		m_Device = vkbDevice.device;
-		m_GraphicsFamilyIndex = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
-		m_PresentFamilyIndex = vkbDevice.get_queue_index(vkb::QueueType::present).value();
-		m_GraphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
-		m_PresentQueue = vkbDevice.get_queue(vkb::QueueType::present).value();
+		s_Device = vkbDevice.device;
+		s_GraphicsFamilyIndex = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
+		s_PresentFamilyIndex = vkbDevice.get_queue_index(vkb::QueueType::present).value();
+		s_GraphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
+		s_PresentQueue = vkbDevice.get_queue(vkb::QueueType::present).value();
 
-		LifetimeManager::PushFunction(vkDestroyDevice, m_Device, nullptr);
+		LifetimeManager::PushFunction(vkDestroyDevice, s_Device, nullptr);
 	}
 
 	void VulkanCore::CreateAllocator()
 	{
 		VmaAllocatorCreateInfo allocatorInfo = {};
-		allocatorInfo.physicalDevice = m_PhysicalDevice;
-		allocatorInfo.device = m_Device;
-		allocatorInfo.instance = m_Instance;
+		allocatorInfo.physicalDevice = s_PhysicalDevice;
+		allocatorInfo.device = s_Device;
+		allocatorInfo.instance = s_Instance;
 		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
-		CHECK_VK_RES(vmaCreateAllocator(&allocatorInfo, &m_Allocator));
-		LifetimeManager::PushFunction(vmaDestroyAllocator, m_Allocator);
+		CHECK_VK_RES(vmaCreateAllocator(&allocatorInfo, &s_Allocator));
+		LifetimeManager::PushFunction(vmaDestroyAllocator, s_Allocator);
 	}
 
 	void VulkanCore::CreateSwapchain()
 	{
-		m_Swapchain = std::make_shared<VulkanSwapchain>(
-			m_PhysicalDevice, 
-			m_Device, m_Surface, 
-			m_Window->GetWidth(),
-			m_Window->GetHeight()
+		s_Swapchain = std::make_shared<VulkanSwapchain>(
+			s_Window->GetWidth(),
+			s_Window->GetHeight()
 		);
 
-		LifetimeManager::PushFunction(vkDestroySwapchainKHR, m_Device, m_Swapchain->GetRaw(), nullptr);
+		LifetimeManager::PushFunction(vkDestroySwapchainKHR, s_Device, s_Swapchain->GetRaw(), nullptr);
 
-		for (const auto& image : m_Swapchain->GetImages())
+		for (const auto& image : s_Swapchain->GetImages())
 		{
-			LifetimeManager::PushFunction(vkDestroyImageView, m_Device, image->GetView(), nullptr);
+			LifetimeManager::PushFunction(vkDestroyImageView, s_Device, image->GetView(), nullptr);
 		}
 	}
 
@@ -117,7 +152,7 @@ namespace tiny_vulkan {
 	{
 		// Settings
 		const VkFormat format = VK_FORMAT_R16G16B16A16_SFLOAT;
-		const VkExtent3D extent = m_Swapchain->GetImages()[0]->GetExtent();
+		const VkExtent3D extent = s_Swapchain->GetImages()[0]->GetExtent();
 
 		// Image Info
 		VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
@@ -128,10 +163,10 @@ namespace tiny_vulkan {
 		imageInfo.arrayLayers = 1;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-		imageInfo.usage = 
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
+		imageInfo.usage =
+			VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-			VK_IMAGE_USAGE_STORAGE_BIT		| 
+			VK_IMAGE_USAGE_STORAGE_BIT |
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -141,9 +176,10 @@ namespace tiny_vulkan {
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 		allocInfo.priority = 1.0f;
 
+		// Create image
 		VkImage image{ VK_NULL_HANDLE };
 		VmaAllocation allocation{ VK_NULL_HANDLE };
-		CHECK_VK_RES(vmaCreateImage(m_Allocator, &imageInfo, &allocInfo, &image, &allocation, nullptr));
+		CHECK_VK_RES(vmaCreateImage(s_Allocator, &imageInfo, &allocInfo, &image, &allocation, nullptr));
 
 		// View Info
 		VkImageViewCreateInfo viewInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
@@ -153,15 +189,27 @@ namespace tiny_vulkan {
 		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.layerCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.baseMipLevel = 0;
 
 		VkImageView view{ VK_NULL_HANDLE };
-		CHECK_VK_RES(vkCreateImageView(m_Device, &viewInfo, nullptr, &view));
+		CHECK_VK_RES(vkCreateImageView(s_Device, &viewInfo, nullptr, &view));
 
 		// Store result
-		m_RenderTarget = std::make_shared<VulkanImage>(image, view, format, extent, allocation);
+		s_RenderTarget = std::make_shared<VulkanImage>(image, view, format, extent, allocation);
 
 		// Cleanup
-		LifetimeManager::PushFunction(vmaDestroyImage, m_Allocator, image, allocation);
-		LifetimeManager::PushFunction(vkDestroyImageView, m_Device, view, nullptr);
+		LifetimeManager::PushFunction(vmaDestroyImage, s_Allocator, image, allocation);
+		LifetimeManager::PushFunction(vkDestroyImageView, s_Device, view, nullptr);
 	}
+
+	void VulkanCore::CreateFrames()
+	{
+		s_Frames.reserve(s_FlightFrameCount);
+		for (int i = 0; i < s_FlightFrameCount; ++i)
+		{
+			s_Frames.push_back(std::make_shared<VulkanFrame>());
+		}
+	}
+
 }

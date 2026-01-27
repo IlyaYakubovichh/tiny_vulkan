@@ -15,14 +15,10 @@ namespace tiny_vulkan {
 	class VulkanImage
 	{
 	public:
-		VulkanImage(VkImage image, VkImageView view, VkFormat format, VkExtent3D extent, VmaAllocation allocation = VK_NULL_HANDLE);
-		~VulkanImage() = default;
+		explicit VulkanImage(VkImage image, VkImageView view, VkFormat format, VkExtent3D extent, VmaAllocation allocation);
 
 		VulkanImage(const VulkanImage&) = delete;
 		VulkanImage& operator=(const VulkanImage&) = delete;
-
-		VulkanImage(VulkanImage&&) = default;
-		VulkanImage& operator=(VulkanImage&&) = default;
 
 		[[nodiscard]] VkImage		GetRaw()		const { return m_Image; }
 		[[nodiscard]] VkImageView	GetView()		const { return m_View; }

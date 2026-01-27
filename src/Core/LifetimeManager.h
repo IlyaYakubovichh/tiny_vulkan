@@ -7,7 +7,7 @@ namespace tiny_vulkan::LifetimeManager {
 	template<typename F, typename... Args>
 	void PushFunction(F&& function, Args&&... args)
 	{
-		RegisterDeleter([func = std::forward<F>(function), ...args = std::forward<Args>(args)]() mutable
+		RegisterDeleter([func = std::forward<F>(function), ...args = std::forward<Args>(args)]()
 			{
 				std::invoke(func, args...);
 			});

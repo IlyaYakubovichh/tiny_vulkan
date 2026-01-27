@@ -4,17 +4,16 @@
 namespace tiny_vulkan::ImageOperations {
 
 	void CmdBlit(
-		VkCommandBuffer cmdBuffer,
-		VulkanImage* srcImage,
-		VulkanImage* dstImage,
-		VkExtent3D srcExtent,
-		VkExtent3D dstExtent)
+		VkCommandBuffer				 cmdBuffer,
+		std::shared_ptr<VulkanImage> srcImage,
+		std::shared_ptr<VulkanImage> dstImage,
+		VkExtent3D					 srcExtent,
+		VkExtent3D					 dstExtent)
 	{
 		// ========================================================
 		// Transition layouts for Transfer
 		// ========================================================
-
-		// Prepare Source: Must be TRANSFER_SRC_OPTIMAL
+		// Prepare Source
 		Synchronization::CmdImageMemoryBarrier(
 			cmdBuffer,
 			srcImage,
@@ -23,7 +22,7 @@ namespace tiny_vulkan::ImageOperations {
 			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
 		);
 
-		// Prepare Destination: Must be TRANSFER_DST_OPTIMAL
+		// Prepare Destination
 		Synchronization::CmdImageMemoryBarrier(
 			cmdBuffer,
 			dstImage,
@@ -54,7 +53,7 @@ namespace tiny_vulkan::ImageOperations {
 		blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 		blitInfo.dstImage = dstImage->GetRaw();
 		blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		blitInfo.filter = VK_FILTER_LINEAR; // Note: Use NEAREST if integer format
+		blitInfo.filter = VK_FILTER_LINEAR;
 		blitInfo.regionCount = 1;
 		blitInfo.pRegions = &blitRegion;
 

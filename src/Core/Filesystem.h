@@ -6,8 +6,6 @@
 #include <optional>
 #include <cstdint> 
 
-#include "LogSystem.h"
-
 namespace tiny_vulkan::IO {
 
     // Reads text files completely into memory.

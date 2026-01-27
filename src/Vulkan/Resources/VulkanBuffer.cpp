@@ -50,13 +50,14 @@ namespace tiny_vulkan {
 		VmaAllocationCreateInfo allocCreateInfo = {};
 		allocCreateInfo.usage = m_MemoryUsagePlace;
 
-		if (m_MemoryUsagePlace == VMA_MEMORY_USAGE_CPU_TO_GPU || m_MemoryUsagePlace == VMA_MEMORY_USAGE_CPU_ONLY) {
+		if (m_MemoryUsagePlace == VMA_MEMORY_USAGE_CPU_TO_GPU || m_MemoryUsagePlace == VMA_MEMORY_USAGE_CPU_ONLY) 
+		{
 			allocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 		}
 
 		VkBuffer buffer{ VK_NULL_HANDLE };
 		VmaAllocation allocation{ VK_NULL_HANDLE };
-		VmaAllocationInfo allocationInfo; // pointer to the mapped memory will be stored here
+		VmaAllocationInfo allocationInfo;
 
 		CHECK_VK_RES(vmaCreateBuffer(m_Allocator, &bufferInfo, &allocCreateInfo, &buffer, &allocation, &allocationInfo));
 

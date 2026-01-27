@@ -1,11 +1,10 @@
 #include "VulkanShader.h"
+#include "VulkanCore.h"
 #include "Filesystem.h"
 #include "LifetimeManager.h"
 #include "LogSystem.h"
 
 #include <shaderc/shaderc.hpp>
-#include <fstream>
-#include <iostream>
 
 namespace tiny_vulkan {
 
@@ -46,52 +45,49 @@ namespace tiny_vulkan {
 	// ==============================================================================
 	// VulkanShader Implementation
 	// ==============================================================================
-	VulkanShader::VulkanShader(VkShaderModule module, VkShaderStageFlagBits stage, std::vector<uint32_t>&& spirv, const std::filesystem::path& path)
-		: m_ShaderModule(module)
-		, m_Stage(stage)
-		, m_SPIRV(std::move(spirv))
-		, m_ShaderPath(path)
+	VulkanShader::VulkanShader(const std::filesystem::path& path)
+		: m_ShaderPath(path)
 	{
+		auto device = VulkanCore::GetDevice();
 
-	}
-
-	std::shared_ptr<VulkanShader> VulkanShader::Create(VkDevice device, const std::filesystem::path& shaderPath)
-	{
-		if (!std::filesystem::exists(shaderPath)) 
+		if (!std::filesystem::exists(m_ShaderPath))
 		{
-			LOG_ERROR(fmt::runtime("Shader file not found: {}"), shaderPath.string());
-			return nullptr;
+			LOG_ERROR(fmt::runtime("Shader file not found: {}"), m_ShaderPath.string());
+			return;
 		}
 
-		std::vector<uint32_t> spirv;
-		auto cachePath = GetCachedPath(shaderPath);
+		m_Stage = GetVkShaderStage(m_ShaderPath);
+		auto cachePath = GetCachedPath(m_ShaderPath);
 
 		// Try to load a cache( .spv ).
-		if (CheckCacheValidity(shaderPath, cachePath))
+		if (CheckCacheValidity(m_ShaderPath, cachePath))
 		{
-			LoadFromCache(shaderPath, spirv);
+			LoadFromCache(cachePath, m_SPIRV);
 		}
 		else
 		{
 			// Compile.
-			if (!CompileToSPIRV(shaderPath, spirv)) return nullptr;
-			SaveToCache(cachePath, spirv);
+			if (!CompileToSPIRV(m_ShaderPath, m_SPIRV))
+			{
+				LOG_ERROR(fmt::runtime("Failed to compile shader: {}"), m_ShaderPath.string());
+			}
+			SaveToCache(cachePath, m_SPIRV);
 		}
 
-		if (spirv.empty()) return nullptr;
+		if (m_SPIRV.empty())
+		{
+			throw std::runtime_error("Shader SPIR-V is empty");
+		}
 
 		// Create shader module.
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = spirv.size() * sizeof(uint32_t);
-		createInfo.pCode = spirv.data();
+		createInfo.codeSize = m_SPIRV.size() * sizeof(uint32_t);
+		createInfo.pCode = m_SPIRV.data();
 
-		VkShaderModule module{ VK_NULL_HANDLE };
-		CHECK_VK_RES(vkCreateShaderModule(device, &createInfo, nullptr, &module));
+		CHECK_VK_RES(vkCreateShaderModule(device, &createInfo, nullptr, &m_ShaderModule));
 
-		LifetimeManager::PushFunction(vkDestroyShaderModule, device, module, nullptr);
-
-		return std::make_shared<VulkanShader>(module, GetVkShaderStage(shaderPath), std::move(spirv), shaderPath);
+		LifetimeManager::PushFunction(vkDestroyShaderModule, device, m_ShaderModule, nullptr);
 	}
 
 	// ==============================================================================
@@ -157,7 +153,7 @@ namespace tiny_vulkan {
 	void VulkanShader::SaveToCache(const std::filesystem::path& cachePath, const std::vector<uint32_t>& spirv)
 	{
 		std::ofstream file(cachePath, std::ios::binary);
-		if (file.is_open()) 
+		if (file.is_open())
 		{
 			file.write(reinterpret_cast<const char*>(spirv.data()), spirv.size() * sizeof(uint32_t));
 		}

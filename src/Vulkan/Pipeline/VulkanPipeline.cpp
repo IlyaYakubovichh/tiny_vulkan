@@ -1,6 +1,6 @@
 #include "VulkanPipeline.h"
+#include "VulkanCore.h"
 #include "LifetimeManager.h" 
-#include <cassert>
 
 namespace tiny_vulkan {
 
@@ -17,25 +17,25 @@ namespace tiny_vulkan {
 	// ==============================================================================
 	// PipelineBuilder 
 	// ==============================================================================
-	PipelineBuilder& PipelineBuilder::SetPipelineType(PipelineType type) 
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetPipelineType(PipelineType type)
 	{
 		m_Type = type;
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::AddDescriptorLayout(VkDescriptorSetLayout layout)
+	VulkanPipelineBuilder& VulkanPipelineBuilder::AddDescriptorLayout(VkDescriptorSetLayout layout)
 	{
 		m_DescriptorSetLayouts.push_back(layout);
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::AddPushConstantRange(VkPushConstantRange range)
+	VulkanPipelineBuilder& VulkanPipelineBuilder::AddPushConstantRange(VkPushConstantRange range)
 	{
 		m_Ranges.push_back(range);
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::AddShader(std::shared_ptr<VulkanShader> shader)
+	VulkanPipelineBuilder& VulkanPipelineBuilder::AddShader(std::shared_ptr<VulkanShader> shader)
 	{
 		if (shader) 
 		{
@@ -44,46 +44,48 @@ namespace tiny_vulkan {
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::SetColorAttachmentFormats(const std::vector<VkFormat>& formats) 
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetColorAttachmentFormats(const std::vector<VkFormat>& formats)
 	{
 		m_ColorFormats = formats;
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::SetDepthFormat(VkFormat format)
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetDepthFormat(VkFormat format)
 	{
 		m_DepthFormat = format;
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::SetTopology(VkPrimitiveTopology topology) 
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetTopology(VkPrimitiveTopology topology)
 	{
 		m_Topology = topology;
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::SetPolygonMode(VkPolygonMode mode) 
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetPolygonMode(VkPolygonMode mode)
 	{
 		m_PolygonMode = mode;
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::SetCullMode(VkCullModeFlags cullMode)
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetCullMode(VkCullModeFlags cullMode)
 	{
 		m_CullMode = cullMode;
 		return *this;
 	}
 
-	PipelineBuilder& PipelineBuilder::SetFrontFace(VkFrontFace frontFace)
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetFrontFace(VkFrontFace frontFace)
 	{
 		m_FrontFace = frontFace;
 		return *this;
 	}
 
-	std::shared_ptr<VulkanPipeline> PipelineBuilder::Build(VkDevice device)
+	std::shared_ptr<VulkanPipeline> VulkanPipelineBuilder::Build()
 	{
+		auto device = VulkanCore::GetDevice();
+
 		// Create pipeline layout
-		if (!BuildPipelineLayout(device)) 
+		if (!BuildPipelineLayout()) 
 		{
 			return nullptr;
 		}
@@ -91,15 +93,17 @@ namespace tiny_vulkan {
 		// Create specific pipeline
 		switch (m_Type)
 		{
-		case PipelineType::COMPUTE:  return BuildCompute(device);
-		case PipelineType::GRAPHICS: return BuildGraphics(device);
+		case PipelineType::COMPUTE:  return BuildCompute();
+		case PipelineType::GRAPHICS: return BuildGraphics();
 		default:
 			return nullptr;
 		}
 	}
 
-	bool PipelineBuilder::BuildPipelineLayout(VkDevice device)
+	bool VulkanPipelineBuilder::BuildPipelineLayout()
 	{
+		auto device = VulkanCore::GetDevice();
+
 		VkPipelineLayoutCreateInfo info{};
 		info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		info.pSetLayouts = m_DescriptorSetLayouts.data();
@@ -114,8 +118,10 @@ namespace tiny_vulkan {
 		return true;
 	}
 
-	std::shared_ptr<VulkanPipeline> PipelineBuilder::BuildCompute(VkDevice device)
+	std::shared_ptr<VulkanPipeline> VulkanPipelineBuilder::BuildCompute()
 	{
+		auto device = VulkanCore::GetDevice();
+
 		if (m_Shaders.empty()) return nullptr;
 
 		VkPipelineShaderStageCreateInfo stageInfo{};
@@ -137,8 +143,10 @@ namespace tiny_vulkan {
 		return std::make_shared<VulkanPipeline>(pipeline, m_PipelineLayout);
 	}
 
-	std::shared_ptr<VulkanPipeline> PipelineBuilder::BuildGraphics(VkDevice device)
+	std::shared_ptr<VulkanPipeline> VulkanPipelineBuilder::BuildGraphics()
 	{
+		auto device = VulkanCore::GetDevice();
+
 		// Shaders
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 		shaderStages.reserve(m_Shaders.size());

@@ -1,14 +1,14 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 namespace tiny_vulkan {
 
 	class VulkanFrame
 	{
 	public:
-		explicit VulkanFrame(VkDevice device, uint32_t queueFamilyIndex, uint32_t swapchainImageCount);
+		explicit VulkanFrame();
 		~VulkanFrame() = default;
 
 		VulkanFrame(const VulkanFrame&) = delete;
