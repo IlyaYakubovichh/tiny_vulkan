@@ -28,7 +28,6 @@ namespace tiny_vulkan {
 		explicit VulkanBufferBuilder() = default;
 		~VulkanBufferBuilder() = default;
 
-		[[nodiscard]] VulkanBufferBuilder& SetAllocator(VmaAllocator allocator);
 		[[nodiscard]] VulkanBufferBuilder& SetAllocationSize(size_t allocSize);
 		[[nodiscard]] VulkanBufferBuilder& SetUsageMask(VkBufferUsageFlags usageMask);
 		[[nodiscard]] VulkanBufferBuilder& SetAllocationPlace(VmaMemoryUsage memoryUsagePlace);
@@ -38,7 +37,6 @@ namespace tiny_vulkan {
 		size_t				m_AllocSize{ 0 };
 		VkBufferUsageFlags	m_UsageMask{ VK_BUFFER_USAGE_TRANSFER_SRC_BIT };
 		VmaMemoryUsage		m_MemoryUsagePlace{ VMA_MEMORY_USAGE_UNKNOWN };
-		VmaAllocator		m_Allocator{ VK_NULL_HANDLE };
 	};
 
 }

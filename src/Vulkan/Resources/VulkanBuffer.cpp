@@ -1,4 +1,5 @@
 #include "VulkanBuffer.h"
+#include "VulkanCore.h"
 #include "LifetimeManager.h"
 
 namespace tiny_vulkan {
@@ -9,12 +10,6 @@ namespace tiny_vulkan {
 		, m_VmaAllocationInfo(allocationInfo)
 	{
 
-	}
-
-	VulkanBufferBuilder& VulkanBufferBuilder::SetAllocator(VmaAllocator allocator)
-	{
-		m_Allocator = allocator;
-		return *this;
 	}
 
 	VulkanBufferBuilder& VulkanBufferBuilder::SetAllocationSize(size_t allocSize)
@@ -55,13 +50,12 @@ namespace tiny_vulkan {
 			allocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 		}
 
+		auto allocator = VulkanCore::GetVmaAllocator();
 		VkBuffer buffer{ VK_NULL_HANDLE };
 		VmaAllocation allocation{ VK_NULL_HANDLE };
 		VmaAllocationInfo allocationInfo;
 
-		CHECK_VK_RES(vmaCreateBuffer(m_Allocator, &bufferInfo, &allocCreateInfo, &buffer, &allocation, &allocationInfo));
-
-		LifetimeManager::PushFunction(vmaDestroyBuffer, m_Allocator, buffer, allocation);
+		CHECK_VK_RES(vmaCreateBuffer(allocator, &bufferInfo, &allocCreateInfo, &buffer, &allocation, &allocationInfo));
 
 		return std::make_shared<VulkanBuffer>(buffer, allocation, allocationInfo);
 	}

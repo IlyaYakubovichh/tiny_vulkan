@@ -34,10 +34,12 @@ namespace tiny_vulkan {
 		std::shared_ptr<VulkanBuffer> vertexBuffer;
 		std::shared_ptr<VulkanBuffer> indexBuffer;
 
+		VkDeviceAddress vertexBufferAddress;
+
 		static std::shared_ptr<Mesh> CreateMeshFrom(
 			const std::string& name, 
-			const std::vector<Vertex>& vertices, 
-			const std::vector<uint32_t>& indices,
+			const std::span<Vertex>& vertices,
+			const std::span<uint32_t>& indices,
 			const std::vector<SubMeshGeo>& subMeshesGeo);
 	};
 

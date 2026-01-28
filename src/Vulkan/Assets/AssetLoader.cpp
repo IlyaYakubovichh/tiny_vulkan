@@ -9,13 +9,19 @@ namespace tiny_vulkan::Loader {
 
 	std::optional<std::vector<std::shared_ptr<Mesh>>> LoadGLTFMeshes(std::filesystem::path filepath)
 	{
+		if (!std::filesystem::exists(filepath))
+		{
+			LOG_ERROR(fmt::runtime("GLTF file not found: {}"), filepath.string());
+			return {};
+		}
+
 		LOG_INFO(fmt::runtime("Loading file: {}"), filepath.string());
 
 		// Load .glb file
-		fastgltf::GltfDataBuffer gltfData;
-		gltfData.FromPath(filepath);
+		auto gltfData = std::move(fastgltf::GltfDataBuffer::FromPath(filepath).get());
 
 		// Options
+		// If not set - lazy loading
 		constexpr auto gltfOptions = 
 			fastgltf::Options::LoadGLBBuffers | // load bin chunk into ram
 			fastgltf::Options::LoadExternalBuffers; // load external buffers referenced by URI into ram
@@ -66,7 +72,7 @@ namespace tiny_vulkan::Loader {
 				);
 
 				// load vertices
-				fastgltf::Accessor& verticesAccessor = gltf.accessors[primitive.findAttribute("POSITION")->accessorIndex]; // get accessor index
+				fastgltf::Accessor& verticesAccessor = gltf.accessors[primitive.findAttribute("POSITION")->accessorIndex];
 				vertices.resize(vertices.size() + verticesAccessor.count);
 
 				fastgltf::iterateAccessorWithIndex<glm::vec3>(gltf, verticesAccessor, 
@@ -103,21 +109,22 @@ namespace tiny_vulkan::Loader {
 				);
 
 				// load color
-				fastgltf::Accessor& colorAccessor = gltf.accessors[primitive.findAttribute("COLOR_0")->accessorIndex];
-
-				fastgltf::iterateAccessorWithIndex<glm::vec4>(gltf, colorAccessor,
-					[&](glm::vec4 color, size_t index) 
+				constexpr bool OverrideColors = true;
+				if (OverrideColors)
+				{
+					for (Vertex& vtx : vertices)
 					{
-						vertices[index + vertexBufferStartPoint].color = color;
+						vtx.color = glm::vec4(vtx.normal, 1.f);
 					}
-				);
+				}
 
 				subMeshesGeo.push_back(subMeshGeo);
 			}
 
-			// Vertex and index buffers are ready, creating mesh
 			meshes.push_back(Mesh::CreateMeshFrom(std::string(mesh.name), vertices, indices, subMeshesGeo));
 		}
+
+		return meshes;
 	}
 
 }

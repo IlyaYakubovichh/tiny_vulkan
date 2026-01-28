@@ -87,14 +87,16 @@
 // Graphics API (Vulkan)
 // =========================================================================
 #include <vulkan/vulkan.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 // =========================================================================
 // Common Project Macros
 // =========================================================================
-#ifndef CHECK_VK_RES
-#define CHECK_VK_RES(res)                                                                           \
-    if (res != VK_SUCCESS) {                                                                        \
-        std::cerr << "Vulkan Error: " << res << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
-        std::abort();                                                                               \
-    }
-#endif
+#define CHECK_VK_RES(smth)          \
+    do {                            \
+        VkResult err = (smth);      \
+        if (err != VK_SUCCESS) {    \
+            std::cerr << "VulkanError: " << string_VkResult(err) << " at " << __FILE__ << ":" << __LINE__ << std::endl; \
+            __debugbreak();         \
+        } \
+    } while(0)

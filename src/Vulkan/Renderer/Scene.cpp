@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "AssetLoader.h"
 #include "VulkanCore.h"
 #include "VulkanSynchronization.h"
 
@@ -7,11 +8,16 @@ namespace tiny_vulkan {
 	Scene::Scene()
 	{
 		// Prepare
+		auto device = VulkanCore::GetDevice();
+
 		std::filesystem::path wd = std::filesystem::current_path() / ".." / "src" / "EntryPoint" / "Assets";
 
+		// Meshes
+		m_Meshes = Loader::LoadGLTFMeshes(wd / "Gltf" / "KV2" / "kv-2_heavy_tank_1940.glb").value();
+
 		// Shaders
-		m_VertexShader = std::make_shared<VulkanShader>(wd / "Shaders" / "triangleV.vert");
-		m_FragmentShader = std::make_shared<VulkanShader>(wd / "Shaders" / "triangleF.frag");
+		m_VertexShader = std::make_shared<VulkanShader>(wd / "Shaders" / "vertexShader.vert");
+		m_FragmentShader = std::make_shared<VulkanShader>(wd / "Shaders" / "fragmentShader.frag");
 
 		// Pipeline
 		VkPushConstantRange pushRange;
@@ -94,7 +100,20 @@ namespace tiny_vulkan {
 		scissor.offset.y = 0;
 		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+		for (auto mesh : m_Meshes)
+		{
+			// Constants
+			glm::mat4 view = glm::translate(glm::vec3{ 0,0,-2 });
+			glm::mat4 projection = glm::perspective(glm::radians(50.f), (float)1280 / (float)720, 0.1f, 10000.f);
+			projection[1][1] *= -1;
+
+			m_ScenePushConstants.vertexBufferAddress = mesh->vertexBufferAddress;
+			m_ScenePushConstants.worldMatrix = projection * view;
+			vkCmdPushConstants(cmdBuffer, m_Pipeline->GetLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ScenePushConstants), &m_ScenePushConstants);
+
+			vkCmdBindIndexBuffer(cmdBuffer, mesh->indexBuffer->GetRaw(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdDrawIndexed(cmdBuffer, mesh->subMeshesGeo[0].count, 1, mesh->subMeshesGeo[0].startIndex, 0, 0);
+		}
 
 		vkCmdEndRendering(cmdBuffer);
 	}

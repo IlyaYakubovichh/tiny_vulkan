@@ -62,6 +62,7 @@ namespace tiny_vulkan {
 		// Try to load a cache( .spv ).
 		if (CheckCacheValidity(m_ShaderPath, cachePath))
 		{
+			LOG_DEBUG(fmt::runtime("Cache is present, loading: {}"), cachePath.filename().string());
 			LoadFromCache(cachePath, m_SPIRV);
 		}
 		else
@@ -71,12 +72,16 @@ namespace tiny_vulkan {
 			{
 				LOG_ERROR(fmt::runtime("Failed to compile shader: {}"), m_ShaderPath.string());
 			}
+			else
+			{
+				LOG_DEBUG(fmt::runtime("Shader {} compiled!"), m_ShaderPath.filename().string());
+			}
 			SaveToCache(cachePath, m_SPIRV);
 		}
 
 		if (m_SPIRV.empty())
 		{
-			throw std::runtime_error("Shader SPIR-V is empty");
+			LOG_ERROR(fmt::runtime("Spirv is empty for: {}"), m_ShaderPath.string());
 		}
 
 		// Create shader module.

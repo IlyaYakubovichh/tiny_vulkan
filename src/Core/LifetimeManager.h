@@ -13,6 +13,12 @@ namespace tiny_vulkan::LifetimeManager {
 			});
 	}
 
+	template<typename F, typename... Args>
+	void ExecuteNow(F&& function, Args&&... args)
+	{
+		std::invoke(std::forward<F>(function), std::forward<Args>(args)...);
+	}
+
 	void RegisterDeleter(std::function<void()>&& deleter);
 
 	void ExecuteAll();

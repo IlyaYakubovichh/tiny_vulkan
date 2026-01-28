@@ -56,7 +56,7 @@ namespace tiny_vulkan {
 		vkb::InstanceBuilder instanceBuilder;
 		s_VkbInstance = instanceBuilder
 			.set_app_name("Tiny Vulkan")
-			.request_validation_layers(true)
+			.request_validation_layers(false)
 			.use_default_debug_messenger()
 			.require_api_version(1, 4, 0)
 			.build()
