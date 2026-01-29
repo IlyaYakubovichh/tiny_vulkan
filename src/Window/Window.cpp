@@ -10,6 +10,7 @@ namespace tiny_vulkan {
 	}
 
 	Window::Window(uint32_t width /*= 1280*/, uint32_t height /*= 720*/, const std::string& title /*= "Tiny Vulkan"*/)
+		: m_Width(width), m_Height(height)
 	{
 		LOG_INFO(fmt::runtime("Creating Window: {0} ({1}x{2})"), title, width, height);
 

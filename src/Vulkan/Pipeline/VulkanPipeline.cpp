@@ -1,6 +1,7 @@
 #include "VulkanPipeline.h"
 #include "VulkanCore.h"
 #include "LifetimeManager.h" 
+#include "LogSystem.h"
 
 namespace tiny_vulkan {
 
@@ -37,7 +38,7 @@ namespace tiny_vulkan {
 
 	VulkanPipelineBuilder& VulkanPipelineBuilder::AddShader(std::shared_ptr<VulkanShader> shader)
 	{
-		if (shader) 
+		if (shader)
 		{
 			m_Shaders.push_back(shader);
 		}
@@ -80,12 +81,22 @@ namespace tiny_vulkan {
 		return *this;
 	}
 
+	VulkanPipelineBuilder& VulkanPipelineBuilder::EnableDepthTest(bool enable)
+	{
+		m_DepthTestEnable = enable;
+		return *this;
+	}
+
+	VulkanPipelineBuilder& VulkanPipelineBuilder::SetBlendMode(BlendMode mode)
+	{
+		m_BlendMode = mode;
+		return *this;
+	}
+
 	std::shared_ptr<VulkanPipeline> VulkanPipelineBuilder::Build()
 	{
-		auto device = VulkanCore::GetDevice();
-
 		// Create pipeline layout
-		if (!BuildPipelineLayout()) 
+		if (!BuildPipelineLayout())
 		{
 			return nullptr;
 		}
@@ -150,7 +161,7 @@ namespace tiny_vulkan {
 		// Shaders
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 		shaderStages.reserve(m_Shaders.size());
-		for (const auto& shader : m_Shaders) 
+		for (const auto& shader : m_Shaders)
 		{
 			VkPipelineShaderStageCreateInfo info{};
 			info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -160,7 +171,7 @@ namespace tiny_vulkan {
 			shaderStages.push_back(info);
 		}
 
-		// Dynamic rendering
+		// Rendering
 		VkPipelineRenderingCreateInfo renderingInfo{};
 		renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 		renderingInfo.colorAttachmentCount = (uint32_t)m_ColorFormats.size();
@@ -184,25 +195,58 @@ namespace tiny_vulkan {
 		// Depth & Stencil
 		VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
 		depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-
-		bool hasDepth = m_DepthFormat != VK_FORMAT_UNDEFINED;
-		depthStencilInfo.depthTestEnable = hasDepth ? VK_TRUE : VK_FALSE;
-		depthStencilInfo.depthWriteEnable = hasDepth ? VK_TRUE : VK_FALSE;
-		depthStencilInfo.depthCompareOp = hasDepth ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_ALWAYS;
+		depthStencilInfo.depthTestEnable = m_DepthTestEnable ? VK_TRUE : VK_FALSE;
+		depthStencilInfo.depthWriteEnable = m_DepthTestEnable ? VK_TRUE : VK_FALSE;
+		depthStencilInfo.depthCompareOp = VK_COMPARE_OP_GREATER_OR_EQUAL; 
+		depthStencilInfo.depthBoundsTestEnable = VK_TRUE;
+		depthStencilInfo.stencilTestEnable = VK_FALSE;
+		depthStencilInfo.front = {};
+		depthStencilInfo.back = {};
 		depthStencilInfo.minDepthBounds = 0.0f;
 		depthStencilInfo.maxDepthBounds = 1.0f;
 
-		// Color Blending
-		VkPipelineColorBlendAttachmentState defaultBlendAttachment{};
-		defaultBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		defaultBlendAttachment.blendEnable = VK_FALSE;
+		// Color Blending Setup
+		VkPipelineColorBlendAttachmentState blendAttachmentState{};
+		blendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
-		std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(m_ColorFormats.size(), defaultBlendAttachment);
+		switch (m_BlendMode)
+		{
+		case BlendMode::ALPHA:
+			blendAttachmentState.blendEnable = VK_TRUE;
+			// formula: color = srcColor * srcAlpha + dstColor * (1 - srcAlpha)
+			blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+			blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+			blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+			break;
+
+		case BlendMode::ADDITIVE:
+			blendAttachmentState.blendEnable = VK_TRUE;
+			// formula: color = srcColor * srcAlpha + dstColor * 1
+			blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			blendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+			blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+			blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+			break;
+
+		case BlendMode::NONE: LOG_INFO("Unknown blend mode");
+		default:
+			blendAttachmentState.blendEnable = VK_FALSE;
+			break;
+		}
+
+		std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(m_ColorFormats.size(), blendAttachmentState);
 
 		VkPipelineColorBlendStateCreateInfo blendInfo{};
 		blendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		blendInfo.attachmentCount = (uint32_t)blendAttachments.size();
 		blendInfo.pAttachments = blendAttachments.data();
+		blendInfo.logicOpEnable = VK_FALSE;
+		blendInfo.logicOp = VK_LOGIC_OP_COPY;
 
 		// Dynamic viewport
 		VkPipelineViewportStateCreateInfo viewportInfo{};

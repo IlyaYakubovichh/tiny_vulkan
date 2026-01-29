@@ -21,9 +21,8 @@ namespace tiny_vulkan::Loader {
 		auto gltfData = std::move(fastgltf::GltfDataBuffer::FromPath(filepath).get());
 
 		// Options
-		// If not set - lazy loading
 		constexpr auto gltfOptions = 
-			fastgltf::Options::LoadGLBBuffers | // load bin chunk into ram
+			// fastgltf::Options::LoadGLBBuffers | default behaviour
 			fastgltf::Options::LoadExternalBuffers; // load external buffers referenced by URI into ram
 
 		// Load glb file and construct Asset
@@ -58,7 +57,7 @@ namespace tiny_vulkan::Loader {
 				subMeshGeo.startIndex = (uint32_t) indices.size();
 				subMeshGeo.count = (uint32_t) gltf.accessors[primitive.indicesAccessor.value()].count;
 
-				uint32_t vertexBufferStartPoint = vertices.size();
+				uint32_t vertexBufferStartPoint = (uint32_t) vertices.size();
 
 				// load indices
 				fastgltf::Accessor& indicesAccessor = gltf.accessors[primitive.indicesAccessor.value()];

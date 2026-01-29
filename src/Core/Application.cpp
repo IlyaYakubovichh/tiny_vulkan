@@ -6,8 +6,12 @@
 
 namespace tiny_vulkan {
 
+	Application* Application::s_AppInstance = nullptr;
+
 	Application::Application(const ApplicationSpec& appSpec)
 	{
+		s_AppInstance = this;
+
 		LogSystem::Initialize();
 
 		m_Window = std::make_shared<Window>(appSpec.windowWidth, appSpec.windowHeight, appSpec.windowName);
@@ -33,4 +37,5 @@ namespace tiny_vulkan {
 			m_Renderer->Draw();
 		}
 	}
+
 }

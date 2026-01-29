@@ -1,4 +1,5 @@
 #include "Scene.h"
+#include "Application.h"
 #include "AssetLoader.h"
 #include "VulkanCore.h"
 #include "VulkanSynchronization.h"
@@ -8,7 +9,7 @@ namespace tiny_vulkan {
 	Scene::Scene()
 	{
 		// Prepare
-		auto device = VulkanCore::GetDevice();
+		m_Window = Application::GetRaw()->GetWindow();
 
 		std::filesystem::path wd = std::filesystem::current_path() / ".." / "src" / "EntryPoint" / "Assets";
 
@@ -33,7 +34,9 @@ namespace tiny_vulkan {
 			.AddShader(m_VertexShader)
 			.AddShader(m_FragmentShader)
 			.SetColorAttachmentFormats(pipelineFormats)
-			.SetDepthFormat(VK_FORMAT_UNDEFINED)
+			.SetDepthFormat(VK_FORMAT_D32_SFLOAT)
+			.EnableDepthTest(true)
+			.SetBlendMode(BlendMode::ALPHA)
 			.SetTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
 			.SetPolygonMode(VK_POLYGON_MODE_FILL)
 			.SetCullMode(VK_CULL_MODE_BACK_BIT)
@@ -46,6 +49,8 @@ namespace tiny_vulkan {
 		// Prepare
 		auto cmdBuffer = VulkanCore::GetCurrentFrame()->GetCmdBuffer();
 		auto rt = VulkanCore::GetRenderTarget();
+		auto rtExtent = rt->GetExtent();
+		auto depth = VulkanCore::GetDepthImage();
 
 		VkRenderingAttachmentInfo attachmentInfo = {};
 		attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -55,11 +60,22 @@ namespace tiny_vulkan {
 		attachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
 		attachmentInfo.resolveImageView = VK_NULL_HANDLE;
 		attachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // load operations define the initial values of an attachment during a render pass instance.
+		attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD; // load operations define the initial values of an attachment during a render pass instance
 		attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // define how values written to an attachment during a render pass instance are stored to memory
 		attachmentInfo.clearValue = {};
 
-		VkExtent3D rtExtent = rt->GetExtent();
+		VkRenderingAttachmentInfo depthAttachmentInfo = {};
+		depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		depthAttachmentInfo.pNext = nullptr;
+		depthAttachmentInfo.imageView = depth->GetView();
+		depthAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+		depthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+		depthAttachmentInfo.resolveImageView = VK_NULL_HANDLE;
+		depthAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depthAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; 
+		depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttachmentInfo.clearValue.depthStencil.depth = 0.0f;
+
 		VkRenderingInfo renderingInfo = {};
 		renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 		renderingInfo.pNext = nullptr;
@@ -69,7 +85,7 @@ namespace tiny_vulkan {
 		renderingInfo.viewMask = 0;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.pColorAttachments = &attachmentInfo;
-		renderingInfo.pDepthAttachment = nullptr;
+		renderingInfo.pDepthAttachment = &depthAttachmentInfo;
 		renderingInfo.pStencilAttachment = nullptr;
 		
 		Synchronization::CmdImageMemoryBarrier(cmdBuffer, rt,
@@ -77,6 +93,13 @@ namespace tiny_vulkan {
 			VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			VK_IMAGE_ASPECT_COLOR_BIT
+		);
+
+		Synchronization::CmdImageMemoryBarrier(cmdBuffer, depth,
+			VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+			VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			VK_IMAGE_ASPECT_DEPTH_BIT
 		);
 
 		// Begin rendering
@@ -87,8 +110,8 @@ namespace tiny_vulkan {
 		VkViewport viewport = {};
 		viewport.x = 0;
 		viewport.y = 0;
-		viewport.width = rtExtent.width;
-		viewport.height = rtExtent.height;
+		viewport.width = (float) rtExtent.width;
+		viewport.height = (float) rtExtent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
@@ -104,7 +127,7 @@ namespace tiny_vulkan {
 		{
 			// Constants
 			glm::mat4 view = glm::translate(glm::vec3{ 0,0,-2 });
-			glm::mat4 projection = glm::perspective(glm::radians(50.f), (float)1280 / (float)720, 0.1f, 10000.f);
+			glm::mat4 projection = glm::perspective(glm::radians(40.f), (float)m_Window->GetWidth() / (float)m_Window->GetHeight(), 10000.f, 0.1f);
 			projection[1][1] *= -1;
 
 			m_ScenePushConstants.vertexBufferAddress = mesh->vertexBufferAddress;

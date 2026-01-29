@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Window.h"
 #include "Mesh.h"
 #include "VulkanPipeline.h"
 #include "VulkanShader.h"
@@ -34,6 +35,7 @@ namespace tiny_vulkan {
 		std::shared_ptr<VulkanShader> m_VertexShader;
 		std::shared_ptr<VulkanShader> m_FragmentShader;
 		std::vector<std::shared_ptr<Mesh>> m_Meshes;
+		std::shared_ptr<Window> m_Window;
 	};
 
 }

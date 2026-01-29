@@ -16,8 +16,8 @@ namespace tiny_vulkan {
 		[[nodiscard]] GLFWwindow*	GetRaw()		const { return m_Window; }
 		[[nodiscard]] uint32_t		GetWidth()		const { return m_Width; }
 		[[nodiscard]] uint32_t		GetHeight()		const { return m_Height; }
-		[[nodiscard]] void			SetWidth(uint32_t width)	{ m_Width = width; }
-		[[nodiscard]] void			SetHeight(uint32_t height)	{ m_Height = height; }
+		void						SetWidth(uint32_t width) { m_Width = width; }
+		void						SetHeight(uint32_t height) { m_Height = height; }
 
 		void OnUpdate();
 

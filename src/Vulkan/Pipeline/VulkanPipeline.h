@@ -15,6 +15,13 @@ namespace tiny_vulkan {
 		RAY_TRACING
 	};
 
+	enum class BlendMode
+	{
+		NONE,       
+		ALPHA,      
+		ADDITIVE 
+	};
+
 	// ========================================================
 	// Vulkan Pipeline 
 	// ========================================================
@@ -22,7 +29,7 @@ namespace tiny_vulkan {
 	{
 	public:
 		explicit VulkanPipeline(VkPipeline pipeline, VkPipelineLayout layout);
-		~VulkanPipeline() = default; 
+		~VulkanPipeline() = default;
 
 		[[nodiscard]] VkPipeline       GetRaw()    const { return m_Pipeline; }
 		[[nodiscard]] VkPipelineLayout GetLayout() const { return m_PipelineLayout; }
@@ -57,6 +64,10 @@ namespace tiny_vulkan {
 		[[nodiscard]] VulkanPipelineBuilder& SetCullMode(VkCullModeFlags cullMode);
 		[[nodiscard]] VulkanPipelineBuilder& SetFrontFace(VkFrontFace frontFace);
 
+		// Depth & Blend Configuration
+		[[nodiscard]] VulkanPipelineBuilder& EnableDepthTest(bool enable);
+		[[nodiscard]] VulkanPipelineBuilder& SetBlendMode(BlendMode mode);
+
 		// Build
 		[[nodiscard]] std::shared_ptr<VulkanPipeline> Build();
 
@@ -80,6 +91,11 @@ namespace tiny_vulkan {
 		VkPolygonMode									m_PolygonMode{ VK_POLYGON_MODE_FILL };
 		VkCullModeFlags									m_CullMode{ VK_CULL_MODE_BACK_BIT };
 		VkFrontFace										m_FrontFace{ VK_FRONT_FACE_CLOCKWISE };
+
+		// Depth & Blend State
+		bool											m_DepthTestEnable{ true };
+		bool											m_DepthWriteEnable{ true };
+		BlendMode										m_BlendMode{ BlendMode::NONE };
 	};
 
 }

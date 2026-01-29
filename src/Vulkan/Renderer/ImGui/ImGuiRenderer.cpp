@@ -87,8 +87,8 @@ namespace tiny_vulkan {
 		initInfo.Queue = graphicsQueue;
 		initInfo.PipelineCache = VK_NULL_HANDLE;
 		initInfo.DescriptorPool = m_Pool;
-		initInfo.MinImageCount = imageCount;
-		initInfo.ImageCount = imageCount;
+		initInfo.MinImageCount = (uint32_t) imageCount;
+		initInfo.ImageCount = (uint32_t) imageCount;
 		initInfo.Allocator = nullptr;
 		initInfo.UseDynamicRendering = true;
 

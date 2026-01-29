@@ -29,6 +29,7 @@ namespace tiny_vulkan {
 		[[nodiscard]] static VkSurfaceKHR								 GetSurface() { return s_Surface; }
 		[[nodiscard]] static std::shared_ptr<VulkanSwapchain>			 GetSwapchain() { return s_Swapchain; }
 		[[nodiscard]] static std::shared_ptr<VulkanImage>				 GetRenderTarget() { return s_RenderTarget; }
+		[[nodiscard]] static std::shared_ptr<VulkanImage>				 GetDepthImage() { return s_DepthImage; }
 		[[nodiscard]] static VkQueue									 GetGraphicsQueue() { return s_GraphicsQueue; }
 		[[nodiscard]] static VkQueue									 GetPresentQueue() { return s_PresentQueue; }
 		[[nodiscard]] static uint32_t									 GetGraphicsFamily() { return s_GraphicsFamilyIndex; }
@@ -44,6 +45,7 @@ namespace tiny_vulkan {
 		static void CreateAllocator();
 		static void CreateSwapchain();
 		static void CreateRenderTarget();
+		static void CreateDepthImage();
 		static void CreateFrames();
 
 	private:
@@ -59,6 +61,7 @@ namespace tiny_vulkan {
 		static VmaAllocator									s_Allocator;
 		static std::shared_ptr<VulkanSwapchain>				s_Swapchain;
 		static std::shared_ptr<VulkanImage>					s_RenderTarget;
+		static std::shared_ptr<VulkanImage>					s_DepthImage;
 		static uint32_t										s_GraphicsFamilyIndex;
 		static uint32_t										s_PresentFamilyIndex;
 		static VkQueue										s_GraphicsQueue;

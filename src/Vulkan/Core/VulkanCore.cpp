@@ -23,6 +23,7 @@ namespace tiny_vulkan {
 	VmaAllocator                     VulkanCore::s_Allocator = VK_NULL_HANDLE;
 	std::shared_ptr<VulkanSwapchain> VulkanCore::s_Swapchain = nullptr;
 	std::shared_ptr<VulkanImage>     VulkanCore::s_RenderTarget = nullptr;
+	std::shared_ptr<VulkanImage>	 VulkanCore::s_DepthImage = nullptr;
 	uint32_t						 VulkanCore::s_GraphicsFamilyIndex = 0;
 	uint32_t						 VulkanCore::s_PresentFamilyIndex = 0;
 	VkQueue							 VulkanCore::s_GraphicsQueue = VK_NULL_HANDLE;
@@ -43,6 +44,7 @@ namespace tiny_vulkan {
 		CreateAllocator();
 		CreateSwapchain();
 		CreateRenderTarget();
+		CreateDepthImage();
 		CreateFrames();
 	}
 
@@ -201,6 +203,61 @@ namespace tiny_vulkan {
 		// Cleanup
 		LifetimeManager::PushFunction(vmaDestroyImage, s_Allocator, image, allocation);
 		LifetimeManager::PushFunction(vkDestroyImageView, s_Device, view, nullptr);
+	}
+
+	void VulkanCore::CreateDepthImage()
+	{
+		VkExtent3D depthExtent = s_RenderTarget->GetExtent();
+		VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
+
+		VkImageCreateInfo depthInfo = {};
+		depthInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		depthInfo.pNext = nullptr;
+		depthInfo.flags = 0;
+		depthInfo.imageType = VK_IMAGE_TYPE_2D;
+		depthInfo.format = depthFormat;
+		depthInfo.extent = depthExtent;
+		depthInfo.mipLevels = 1;
+		depthInfo.arrayLayers = 1;
+		depthInfo.samples = VK_SAMPLE_COUNT_1_BIT;	
+		depthInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+		depthInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		depthInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		depthInfo.queueFamilyIndexCount = 0;
+		depthInfo.pQueueFamilyIndices = nullptr;
+		depthInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		VmaAllocationCreateInfo allocationInfo = {};
+		allocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+		allocationInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		VkImage depthImage{ VK_NULL_HANDLE };
+		VkImageView depthView{ VK_NULL_HANDLE };
+		VmaAllocation allocation{ VK_NULL_HANDLE };
+		vmaCreateImage(s_Allocator, &depthInfo, &allocationInfo, &depthImage, &allocation, nullptr);
+
+		VkImageViewCreateInfo depthViewInfo = {};
+		depthViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		depthViewInfo.pNext = nullptr;
+		depthViewInfo.flags = 0;
+		depthViewInfo.image = depthImage;
+		depthViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		depthViewInfo.format = depthFormat;
+		depthViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		depthViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		depthViewInfo.subresourceRange.baseArrayLayer = 0;
+		depthViewInfo.subresourceRange.baseMipLevel = 0;
+		depthViewInfo.subresourceRange.layerCount = 1;
+		depthViewInfo.subresourceRange.levelCount = 1;
+		CHECK_VK_RES(vkCreateImageView(s_Device, &depthViewInfo, nullptr, &depthView));
+
+		s_DepthImage = std::make_shared<VulkanImage>(depthImage, depthView, depthFormat, depthExtent, allocation);
+
+		LifetimeManager::PushFunction(vmaDestroyImage, s_Allocator, depthImage, allocation);
+		LifetimeManager::PushFunction(vkDestroyImageView, s_Device, depthView, nullptr);
 	}
 
 	void VulkanCore::CreateFrames()
