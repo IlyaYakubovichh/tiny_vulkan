@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <memory>
+#include <functional>
 #include <vulkan/vulkan.h>
 
 namespace tiny_vulkan {
@@ -17,6 +18,10 @@ namespace tiny_vulkan {
 		VulkanSwapchain(const VulkanSwapchain&) = delete;
 		VulkanSwapchain& operator=(const VulkanSwapchain&) = delete;
 
+		void CreateSwapchain(uint32_t width, uint32_t height);
+		void RecreateSwapchain(uint32_t width, uint32_t height);
+		void CleanupResources();
+
 		[[nodiscard]] VkSwapchainKHR	GetRaw()	const { return m_Swapchain; }
 		[[nodiscard]] VkFormat			GetFormat() const { return m_Format; }
 		[[nodiscard]] VkExtent2D		GetExtent() const { return m_Extent; }
@@ -27,6 +32,8 @@ namespace tiny_vulkan {
 		VkFormat			m_Format{ VK_FORMAT_UNDEFINED };
 		VkExtent2D			m_Extent{ 0, 0 };
 		std::vector<std::shared_ptr<VulkanImage>> m_Images;
+
+		std::vector<std::function<void()>> m_OwnDeleters;
 	};
 
 }

@@ -25,7 +25,8 @@ namespace tiny_vulkan {
 
 	Application::~Application() 
 	{
-		LifetimeManager::PushFunction(vkDeviceWaitIdle, VulkanCore::GetDevice());
+		LifetimeManager::ExecuteNow(vkDeviceWaitIdle, VulkanCore::GetDevice());
+		VulkanCore::GetSwapchain()->CleanupResources();
 		LifetimeManager::ExecuteAll(); 
 	}
 

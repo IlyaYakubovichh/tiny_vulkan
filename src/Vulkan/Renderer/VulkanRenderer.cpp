@@ -2,6 +2,7 @@
 #include "VulkanCore.h"
 #include "VulkanSynchronization.h"
 #include "ImageOperations.h"
+#include "LogSystem.h"
 
 namespace tiny_vulkan {
 
@@ -15,10 +16,12 @@ namespace tiny_vulkan {
 	void VulkanRenderer::Draw()
 	{
 		BeginFrame();
+		if (m_InvalidSwapchain) return;
 
 		m_Scene->Render();
 
 		EndFrame();
+		if (m_InvalidSwapchain) return;
 	}
 
 	void VulkanRenderer::BeginFrame()
@@ -29,13 +32,14 @@ namespace tiny_vulkan {
 		auto    renderFence			= frame->GetRenderFence();
 		auto	imgAcqSemaphore		= frame->GetImageAcquireSemaphore();
 
-		// Wait rendering finished
 		CHECK_VK_RES(vkWaitForFences(device, 1, &renderFence, VK_TRUE, UINT64_MAX));
 		CHECK_VK_RES(vkResetFences(device, 1, &renderFence));
 
-		// Acquire next swapchain image
-		CHECK_VK_RES(vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imgAcqSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex));
-
+		if (vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, imgAcqSemaphore, VK_NULL_HANDLE, &m_CurrentImageIndex) == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			m_InvalidSwapchain = true;
+			return;
+		}
 		CHECK_VK_RES(vkResetCommandBuffer(frame->GetCmdBuffer(), 0));
 
 		// Prepare cmd buffer for commands recording
@@ -97,7 +101,11 @@ namespace tiny_vulkan {
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = &signalInfo.semaphore;
 		presentInfo.pImageIndices = &m_CurrentImageIndex;
-		CHECK_VK_RES(vkQueuePresentKHR(presentQueue, &presentInfo));
+		if (vkQueuePresentKHR(presentQueue, &presentInfo) == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			m_InvalidSwapchain = true;
+			return;
+		}
 
 		VulkanCore::AdvanceFrame();
 	}

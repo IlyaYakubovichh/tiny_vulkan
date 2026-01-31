@@ -13,18 +13,19 @@ namespace tiny_vulkan {
 		~Window() = default; 
 
 		[[nodiscard]] bool			ShouldClose()	const;
-		[[nodiscard]] GLFWwindow*	GetRaw()		const { return m_Window; }
-		[[nodiscard]] uint32_t		GetWidth()		const { return m_Width; }
-		[[nodiscard]] uint32_t		GetHeight()		const { return m_Height; }
-		void						SetWidth(uint32_t width) { m_Width = width; }
-		void						SetHeight(uint32_t height) { m_Height = height; }
+		[[nodiscard]] GLFWwindow*	GetRaw()		const	{ return m_Window; }
+		[[nodiscard]] int			GetWidth()		const	{ return m_Width; }
+		[[nodiscard]] int			GetHeight()		const	{ return m_Height; }
+		void						SetWidth(int width)		{ m_Width = width; }
+		void						SetHeight(int height)	{ m_Height = height; }
+		void						Update();
 
-		void OnUpdate();
+		void						OnUpdate();
 
 	private:
 		GLFWwindow* m_Window{ nullptr };
-		uint32_t    m_Width{ 0 };
-		uint32_t    m_Height{ 0 };
+		int m_Width{ 0 };
+		int m_Height{ 0 };
 	};
 
 }

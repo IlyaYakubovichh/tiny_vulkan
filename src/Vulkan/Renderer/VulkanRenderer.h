@@ -31,6 +31,7 @@ namespace tiny_vulkan {
 		std::shared_ptr<Window>			m_Window;
 		std::shared_ptr<ImGuiRenderer>	m_ImGuiRenderer;
 		uint32_t						m_CurrentImageIndex{ 0 };
+		bool							m_InvalidSwapchain{ false };
 	};
 
 }

@@ -1,21 +1,27 @@
 #include "VulkanSwapchain.h"
 #include "VulkanCore.h"
+#include "LifetimeManager.h"
 #include "VkBootstrap.h"
 
 namespace tiny_vulkan {
 
 	VulkanSwapchain::VulkanSwapchain(uint32_t width, uint32_t height)
 	{
-		auto device			 = VulkanCore::GetDevice();
-		auto physicalDevice  = VulkanCore::GetPhysicalDevice();
-		auto surface		 = VulkanCore::GetSurface();
+		CreateSwapchain(width, height);
+	}
+
+	void VulkanSwapchain::CreateSwapchain(uint32_t width, uint32_t height)
+	{
+		auto device = VulkanCore::GetDevice();
+		auto physicalDevice = VulkanCore::GetPhysicalDevice();
+		auto surface = VulkanCore::GetSurface();
 
 		// ========================================================
 		// Configuration
 		// ========================================================
-		const VkFormat desiredFormat				= VK_FORMAT_R8G8B8A8_UNORM;
-		const VkColorSpaceKHR desiredColorSpace		= VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-		const VkPresentModeKHR desiredPresentMode	= VK_PRESENT_MODE_FIFO_KHR; // V-Sync enabled by default
+		const VkFormat desiredFormat = VK_FORMAT_R8G8B8A8_UNORM;
+		const VkColorSpaceKHR desiredColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		const VkPresentModeKHR desiredPresentMode = VK_PRESENT_MODE_FIFO_KHR; // V-Sync enabled by default
 
 		// ========================================================
 		// Builder
@@ -50,9 +56,48 @@ namespace tiny_vulkan {
 				views[i],
 				m_Format,
 				VkExtent3D{ .width = m_Extent.width, .height = m_Extent.height, .depth = 1 },
-				VmaAllocation{ VK_NULL_HANDLE } 
+				VmaAllocation{ VK_NULL_HANDLE }
 			));
 		}
+
+		// Register cleanup
+		for (auto view : views)
+		{
+			m_OwnDeleters.push_back([=]() -> void
+				{
+					vkDestroyImageView(device, view, nullptr);
+				}
+			);
+		}
+		m_OwnDeleters.push_back([=]() -> void
+			{
+				vkDestroySwapchainKHR(device, m_Swapchain, nullptr);
+			}
+		);
+	}
+
+	void VulkanSwapchain::RecreateSwapchain(uint32_t width, uint32_t height)
+	{
+		auto device = VulkanCore::GetDevice();
+		CHECK_VK_RES(vkDeviceWaitIdle(VulkanCore::GetDevice()));
+
+		CleanupResources();
+
+		CreateSwapchain(width, height);
+	}
+
+	void VulkanSwapchain::CleanupResources()
+	{
+		for (auto it = m_OwnDeleters.rbegin(); it != m_OwnDeleters.rend(); ++it) 
+		{
+			if (*it)
+			{
+				(*it)();
+			}
+		}
+		m_OwnDeleters.clear();
+		m_Images.clear();
+		m_Swapchain = VK_NULL_HANDLE;
 	}
 
 }

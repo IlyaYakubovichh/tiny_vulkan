@@ -1,4 +1,5 @@
 #include "VulkanCore.h"
+#include "Application.h"
 #include "LifetimeManager.h"
 #include "LogSystem.h"
 
@@ -141,13 +142,6 @@ namespace tiny_vulkan {
 			s_Window->GetWidth(),
 			s_Window->GetHeight()
 		);
-
-		LifetimeManager::PushFunction(vkDestroySwapchainKHR, s_Device, s_Swapchain->GetRaw(), nullptr);
-
-		for (const auto& image : s_Swapchain->GetImages())
-		{
-			LifetimeManager::PushFunction(vkDestroyImageView, s_Device, image->GetView(), nullptr);
-		}
 	}
 
 	void VulkanCore::CreateRenderTarget()
