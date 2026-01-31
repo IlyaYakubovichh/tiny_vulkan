@@ -233,7 +233,7 @@ namespace tiny_vulkan {
 			blendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 			break;
 
-		case BlendMode::NONE: LOG_INFO("Unknown blend mode");
+		case BlendMode::NONE: 
 		default:
 			blendAttachmentState.blendEnable = VK_FALSE;
 			break;

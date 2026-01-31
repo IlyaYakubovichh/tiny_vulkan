@@ -257,7 +257,7 @@ namespace tiny_vulkan {
 	void VulkanCore::CreateFrames()
 	{
 		s_Frames.reserve(s_FlightFrameCount);
-		for (int i = 0; i < s_FlightFrameCount; ++i)
+		for (uint32_t i = 0; i < s_FlightFrameCount; ++i)
 		{
 			s_Frames.push_back(std::make_shared<VulkanFrame>());
 		}

@@ -1,5 +1,4 @@
 #include "Window.h"
-#include "Application.h"
 #include "VulkanCore.h"
 #include "LifetimeManager.h"
 #include "LogSystem.h"

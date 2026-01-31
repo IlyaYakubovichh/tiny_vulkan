@@ -23,4 +23,24 @@ namespace tiny_vulkan {
 		vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
 	}
 
+	void VulkanDescriptorSet::WriteBuffer(const DescriptorWriteBufferInfo& info)
+	{
+		auto device = VulkanCore::GetDevice();
+
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = info.buffer;
+		bufferInfo.offset = info.offset;
+		bufferInfo.range = info.size;
+
+		VkWriteDescriptorSet write{};
+		write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		write.dstSet = m_Set;
+		write.dstBinding = info.dstBinding;
+		write.descriptorCount = info.descriptorCount;
+		write.descriptorType = info.descriptorType;
+		write.pBufferInfo = &bufferInfo;
+
+		vkUpdateDescriptorSets(device, 1, &write, 0, nullptr);
+	}
+
 }
